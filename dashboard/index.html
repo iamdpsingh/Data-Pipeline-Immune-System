@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Data Pipeline Immune System — Operational Intelligence</title>
+  <meta name="description" content="Autonomous data reliability control center: Detect, Diagnose, Remediate, and Verify data pipeline failures with multi-agent intelligence.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body class="dark-theme">
+  <!-- Top Navigation Bar -->
+  <header class="app-header">
+    <div class="header-left">
+      <div class="brand-logo">
+        <div class="pulse-indicator"></div>
+        <span class="brand-text">DPIS // IMMUNE CONTROL</span>
+      </div>
+      <div class="system-environment-badge">
+        <span class="badge-dot"></span>
+        <span id="envName">ENV: PRODUCTION-READY (DEV ACTIVE)</span>
+      </div>
+    </div>
+    <div class="header-right">
+      <div class="telemetry-stat">
+        <span class="stat-label">MONITORED PIPELINES</span>
+        <span class="stat-value" id="totalPipelines">12 ACTIVE</span>
+      </div>
+      <div class="telemetry-stat">
+        <span class="stat-label">SYSTEM HEALTH</span>
+        <span class="stat-value highlight-emerald" id="overallHealthScore">96.4 / 100</span>
+      </div>
+      <button class="btn btn-primary" id="btnTriggerScan">RUN IMMUNE SWEEP</button>
+    </div>
+  </header>
+
+  <!-- Main Grid Layout -->
+  <main class="dashboard-container">
+    <!-- Top KPI Cards -->
+    <section class="kpi-grid">
+      <div class="kpi-card glass-panel">
+        <div class="kpi-title">COMPOSITE HEALTH SCORE</div>
+        <div class="kpi-value-row">
+          <span class="kpi-main-number text-emerald" id="kpiScore">96.4</span>
+          <span class="kpi-trend text-emerald">↑ +2.1% (24h)</span>
+        </div>
+        <div class="kpi-progress-bar">
+          <div class="progress-fill emerald-fill" style="width: 96.4%;"></div>
+        </div>
+        <div class="kpi-subtext">Weighted multi-factor reliability index</div>
+      </div>
+
+      <div class="kpi-card glass-panel">
+        <div class="kpi-title">AUTONOMOUS MTTR</div>
+        <div class="kpi-value-row">
+          <span class="kpi-main-number text-indigo">1.4m</span>
+          <span class="kpi-trend text-indigo">⚡ -84% vs Human MTTR</span>
+        </div>
+        <div class="kpi-progress-bar">
+          <div class="progress-fill indigo-fill" style="width: 84%;"></div>
+        </div>
+        <div class="kpi-subtext">Mean time to automated resolution</div>
+      </div>
+
+      <div class="kpi-card glass-panel">
+        <div class="kpi-title">NEVER-ALLOW ENFORCEMENT</div>
+        <div class="kpi-value-row">
+          <span class="kpi-main-number text-emerald">100%</span>
+          <span class="kpi-trend text-emerald">0 Safety Violations</span>
+        </div>
+        <div class="kpi-progress-bar">
+          <div class="progress-fill emerald-fill" style="width: 100%;"></div>
+        </div>
+        <div class="kpi-subtext">Hard boundary code safety checks</div>
+      </div>
+
+      <div class="kpi-card glass-panel">
+        <div class="kpi-title">INCIDENTS AUTO-RESOLVED</div>
+        <div class="kpi-value-row">
+          <span class="kpi-main-number text-amber" id="autoResolvedCount">47 / 52</span>
+          <span class="kpi-trend text-amber">90.3% Auto-Repair Rate</span>
+        </div>
+        <div class="kpi-progress-bar">
+          <div class="progress-fill amber-fill" style="width: 90.3%;"></div>
+        </div>
+        <div class="kpi-subtext">5 escalated to human operator sign-off</div>
+      </div>
+    </section>
+
+    <!-- Mid Section: Active Incident Agent Lifecycle Visualizer -->
+    <section class="lifecycle-visualizer-section glass-panel">
+      <div class="section-header">
+        <div class="section-title-group">
+          <h2>LIVE IMMUNE AGENT LIFECYCLE</h2>
+          <span class="incident-badge badge-p1" id="activeIncidentBadge">ACTIVE INCIDENT: inc-77f98d (orders)</span>
+        </div>
+        <div class="lifecycle-legend">
+          <span class="legend-item"><span class="legend-dot status-passed"></span> Completed</span>
+          <span class="legend-item"><span class="legend-dot status-active"></span> Processing</span>
+          <span class="legend-item"><span class="legend-dot status-pending"></span> Queued</span>
+        </div>
+      </div>
+
+      <div class="agent-stepper" id="agentStepper">
+        <div class="step-card step-completed" id="stepDetection">
+          <div class="step-icon">01</div>
+          <div class="step-content">
+            <div class="step-role">DETECTION AGENT</div>
+            <div class="step-headline">Anomaly Identified</div>
+            <div class="step-meta">P1 Row Drop (-48% below adaptive baseline)</div>
+          </div>
+        </div>
+        <div class="step-connector completed"></div>
+
+        <div class="step-card step-completed" id="stepDiagnosis">
+          <div class="step-icon">02</div>
+          <div class="step-content">
+            <div class="step-role">DIAGNOSIS AGENT</div>
+            <div class="step-headline">UPSTREAM_PARTIAL_LOAD</div>
+            <div class="step-meta">Confidence 0.95 (Matched Memory inc-past-001)</div>
+          </div>
+        </div>
+        <div class="step-connector completed"></div>
+
+        <div class="step-card step-completed" id="stepRisk">
+          <div class="step-icon">03</div>
+          <div class="step-content">
+            <div class="step-role">RISK AGENT</div>
+            <div class="step-headline">LOW RISK APPROVED</div>
+            <div class="step-meta">Idempotent retry; Never-allow clear</div>
+          </div>
+        </div>
+        <div class="step-connector completed"></div>
+
+        <div class="step-card step-completed" id="stepRemediation">
+          <div class="step-icon">04</div>
+          <div class="step-content">
+            <div class="step-role">REMEDIATION AGENT</div>
+            <div class="step-headline">RETRY_SOURCE_EXTRACTION</div>
+            <div class="step-meta">Sensor retriggered with backoff</div>
+          </div>
+        </div>
+        <div class="step-connector completed"></div>
+
+        <div class="step-card step-completed" id="stepVerification">
+          <div class="step-icon">05</div>
+          <div class="step-content">
+            <div class="step-role">VERIFICATION AGENT</div>
+            <div class="step-headline">All Checks Passed</div>
+            <div class="step-meta">100% Volume restored, 0 null breach</div>
+          </div>
+        </div>
+        <div class="step-connector completed"></div>
+
+        <div class="step-card step-completed" id="stepLearning">
+          <div class="step-icon">06</div>
+          <div class="step-content">
+            <div class="step-role">LEARNING AGENT</div>
+            <div class="step-headline">Incident Learned</div>
+            <div class="step-meta">Committed to BigQuery Incident Memory</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Bottom Section: Split Pane (Incidents Table & Chaos Failure Simulator) -->
+    <div class="bottom-split-grid">
+      <!-- Left: Real-time Incident Audit Log -->
+      <section class="incidents-table-panel glass-panel">
+        <div class="section-header">
+          <h2>INCIDENT AUDIT LOG</h2>
+          <div class="table-actions">
+            <input type="text" class="search-input" id="tableFilter" placeholder="Filter incidents, causes, pipelines...">
+          </div>
+        </div>
+        <div class="table-responsive">
+          <table class="data-table" id="incidentsTable">
+            <thead>
+              <tr>
+                <th>INCIDENT ID</th>
+                <th>PIPELINE</th>
+                <th>SEVERITY</th>
+                <th>ROOT CAUSE</th>
+                <th>ACTION TAKEN</th>
+                <th>STATE</th>
+                <th>MTTR</th>
+              </tr>
+            </thead>
+            <tbody id="incidentsBody">
+              <!-- Dynamically populated via JS -->
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- Right: Chaos Failure Injection Controls -->
+      <section class="chaos-injection-panel glass-panel">
+        <div class="section-header">
+          <h2>CHAOS FAILURE INJECTION</h2>
+          <span class="badge-guard">ENVIRONMENT GUARD: ACTIVE</span>
+        </div>
+        <p class="panel-desc">
+          Trigger controlled real-world failure patterns to observe the autonomous immune cycle in action.
+        </p>
+
+        <div class="injection-cards-grid">
+          <div class="injection-item">
+            <div class="inj-header">
+              <span class="inj-name">Row Anomaly (Drop 48%)</span>
+              <span class="badge-p1">P1</span>
+            </div>
+            <p class="inj-desc">Simulates partial source extraction below adaptive baseline.</p>
+            <button class="btn btn-outline" onclick="triggerSimulation('row_anomaly')">INJECT ROW DROP</button>
+          </div>
+
+          <div class="injection-item">
+            <div class="inj-header">
+              <span class="inj-name">PII Column Exposure</span>
+              <span class="badge-p0">P0 BOUNDARY</span>
+            </div>
+            <p class="inj-desc">Simulates credit card or SSN column entering stream. Tests hard block.</p>
+            <button class="btn btn-outline btn-danger" onclick="triggerSimulation('pii_exposure')">INJECT PII COLUMN</button>
+          </div>
+
+          <div class="injection-item">
+            <div class="inj-header">
+              <span class="inj-name">Null Rate Spike (25%)</span>
+              <span class="badge-p2">P2</span>
+            </div>
+            <p class="inj-desc">Injects missing keys to trigger quarantine dead-letter partition.</p>
+            <button class="btn btn-outline" onclick="triggerSimulation('null_spike')">INJECT NULL SPIKE</button>
+          </div>
+
+          <div class="injection-item">
+            <div class="inj-header">
+              <span class="inj-name">Breaking Schema Drift</span>
+              <span class="badge-p1">P1 APPROVAL</span>
+            </div>
+            <p class="inj-desc">Mutates column datatype requiring human sign-off before quarantine.</p>
+            <button class="btn btn-outline" onclick="triggerSimulation('schema_drift')">INJECT BREAKING SCHEMA</button>
+          </div>
+        </div>
+
+        <!-- Real-time Terminal Log Stream -->
+        <div class="terminal-log-container">
+          <div class="terminal-header">
+            <span class="terminal-title">IMMUNE TELEMETRY STREAM</span>
+            <span class="terminal-dot"></span>
+          </div>
+          <pre class="terminal-body" id="terminalOutput">> [INIT] Data Pipeline Immune System connected to BigQuery control plane.
+> [OBSERVE] Baseline engine active across 12 registered pipelines.
+> [HEALTH] Composite reliability score: 96.4. Standing by for triggers.</pre>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>
