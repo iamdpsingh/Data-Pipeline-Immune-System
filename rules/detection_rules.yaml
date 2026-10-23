@@ -1,0 +1,132 @@
+# Detection rules — deterministic pattern matching before AI diagnosis.
+#
+# The detection engine checks these rules first. If a pattern matches, the root
+# cause is classified without calling the LLM. If no rule matches, the incident
+# goes to the Diagnosis Agent.
+#
+# Conditions use AND logic within a rule. OR logic is achieved with multiple rules.
+
+rules:
+
+  - name: transient_task_failure
+    description: >
+      Airflow task failed but has been flagged as a transient error type
+      (OOM, timeout, connection reset). These are safe to retry automatically.
+    conditions:
+      task_status: FAILED
+      error_type:
+        - TIMEOUT
+        - CONNECTION_RESET
+        - OUT_OF_MEMORY
+      retry_count:
+        less_than: 3
+    classification:
+      root_cause: TRANSIENT_TASK_FAILURE
+      confidence: 0.95
+      recommended_action: RETRY_TASK
+      severity: P2
+
+  - name: api_timeout
+    description: >
+      Source API returned a timeout or 5xx during extraction. The API is
+      usually available after a short wait.
+    conditions:
+      task_status: FAILED
+      error_message_contains:
+        - "ReadTimeout"
+        - "ConnectionTimeout"
+        - "502"
+        - "503"
+        - "504"
+    classification:
+      root_cause: API_TIMEOUT
+      confidence: 0.95
+      recommended_action: RETRY_SOURCE_EXTRACTION
+      severity: P2
+
+  - name: missing_partition
+    description: >
+      Expected partition in the source or intermediate table does not exist.
+      Common when a source feed missed a day.
+    conditions:
+      partition_exists: false
+      source_available: true
+    classification:
+      root_cause: MISSING_PARTITION
+      confidence: 0.90
+      recommended_action: REPROCESS_PARTITION
+      severity: P2
+
+  - name: corrupted_source_file
+    description: >
+      Source file checksum does not match what was expected, or the file
+      failed to parse. Re-downloading and re-ingesting is the right response.
+    conditions:
+      checksum_valid: false
+    classification:
+      root_cause: CORRUPTED_FILE
+      confidence: 0.95
+      recommended_action: RELOAD_SOURCE_FILE
+      severity: P1
+
+  - name: pii_column_detected
+    description: >
+      An unexpected column matching PII patterns (ssn, credit_card, passport,
+      national_id) was found in the source data. This is always P0.
+    conditions:
+      unexpected_pii_column: true
+    classification:
+      root_cause: PII_EXPOSURE_RISK
+      confidence: 1.0
+      recommended_action: BLOCK_PIPELINE
+      severity: P0
+
+  - name: breaking_schema_change
+    description: >
+      An existing column's type has changed, or a required column has been
+      removed. This breaks downstream consumers.
+    conditions:
+      schema_change_type: BREAKING
+    classification:
+      root_cause: SCHEMA_BREAKING_CHANGE
+      confidence: 0.99
+      recommended_action: QUARANTINE_BAD_RECORDS
+      severity: P1
+
+  - name: additive_schema_change
+    description: >
+      New columns have been added to the source. Non-breaking — downstream
+      systems that don't select * will be unaffected.
+    conditions:
+      schema_change_type: ADDITIVE
+    classification:
+      root_cause: SCHEMA_ADDITIVE_CHANGE
+      confidence: 0.99
+      recommended_action: ADD_COLUMN_TO_STAGING
+      severity: P3
+
+  - name: freshness_sla_breach
+    description: >
+      The pipeline has not produced fresh data within the configured SLA window.
+      Could be a pipeline delay or a missed run.
+    conditions:
+      freshness_breach: true
+      pipeline_running: false
+    classification:
+      root_cause: FRESHNESS_FAILURE
+      confidence: 0.90
+      recommended_action: RERUN_FAILED_DAG
+      severity: P2
+
+  - name: repeated_failure
+    description: >
+      The same pipeline has failed 3+ times in the last 24 hours. At this point
+      it's not transient — it needs investigation.
+    conditions:
+      failure_count_last_24h:
+        greater_than_or_equal: 3
+    classification:
+      root_cause: REPEATED_FAILURE
+      confidence: 0.85
+      recommended_action: ESCALATE_TO_HUMAN
+      severity: P1
