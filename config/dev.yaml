@@ -1,0 +1,71 @@
+# Development environment configuration
+# Used when ENVIRONMENT=dev
+#
+# Dev uses lower thresholds for faster feedback during testing.
+# Failure injection is enabled. Cloud Run minimum instances = 0 (scale to zero).
+#
+# DO NOT copy production values here. Dev should be lenient enough
+# to run without real source data at realistic volumes.
+
+project:
+  id: dpis-dev
+  dataset: dpis_dev
+  location: us-central1
+
+gcs:
+  source_bucket: dpis-dev-source
+  bronze_bucket: dpis-dev-bronze
+  quarantine_bucket: dpis-dev-quarantine
+
+detection:
+  # z-score threshold for row count anomaly. Lower in dev to trigger more easily
+  # when testing with small synthetic datasets.
+  row_count_zscore_threshold: 2.0
+  # Minimum historical runs before adaptive baseline is used. Below this,
+  # fall back to static percentage threshold.
+  min_baseline_runs: 7
+  baseline_lookback_days: 14
+  freshness_sla_minutes: 120  # 2 hours in dev vs production SLA per pipeline
+
+quality:
+  null_threshold: 0.10          # 10% nulls allowed before alert
+  duplicate_threshold: 0.05     # 5% duplicates
+  volume_lower_bound: 0.70      # row count >= 70% of expected
+  volume_upper_bound: 1.30      # row count <= 130% of expected
+
+health_score:
+  weights:
+    reliability: 0.30
+    freshness: 0.20
+    quality: 0.20
+    schema_stability: 0.15
+    sla_compliance: 0.15
+  thresholds:
+    healthy: 90
+    warning: 75
+    degraded: 50
+
+agents:
+  # LLM config — use a cheaper/faster model in dev
+  llm_model: gemini-1.5-flash
+  llm_temperature: 0.1          # low temperature for consistent responses
+  llm_max_tokens: 2048
+  diagnosis_timeout_seconds: 30
+
+remediation:
+  max_retry_count: 3
+  retry_backoff_base_seconds: 30
+  # Quarantine threshold — if more than this % of records are bad, escalate
+  # instead of quarantining. 10% in dev, lower in production.
+  quarantine_max_percentage: 0.10
+
+cloud_run:
+  min_instances: 0             # scale to zero in dev (cost saving)
+  max_instances: 5
+  timeout_seconds: 300
+
+failure_injection:
+  enabled: true               # always enabled in dev
+
+logging:
+  level: DEBUG

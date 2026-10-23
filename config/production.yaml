@@ -1,0 +1,65 @@
+# Production environment configuration
+# Used when ENVIRONMENT=production
+#
+# Stricter thresholds than dev/staging. Minimum Cloud Run instances = 1
+# so there's no cold start on P0 incident response. Failure injection disabled.
+#
+# DO NOT change thresholds here without reviewing the impact on false-positive rate.
+# A threshold that's too strict will generate alert fatigue. Too lenient and
+# we'll miss real incidents. Any change should be tracked in decision.md.
+
+project:
+  id: dpis-prod
+  dataset: dpis_prod
+  location: us-central1
+
+gcs:
+  source_bucket: dpis-prod-source
+  bronze_bucket: dpis-prod-bronze
+  quarantine_bucket: dpis-prod-quarantine
+
+detection:
+  row_count_zscore_threshold: 3.0     # stricter in production
+  min_baseline_runs: 14               # need 2 full weeks of history
+  baseline_lookback_days: 28          # 4 weeks for a more stable baseline
+  freshness_sla_minutes: null         # per-pipeline SLA from pipeline_registry
+
+quality:
+  null_threshold: 0.05          # 5% nulls — stricter than dev
+  duplicate_threshold: 0.02     # 2% duplicates
+  volume_lower_bound: 0.80
+  volume_upper_bound: 1.20
+
+health_score:
+  weights:
+    reliability: 0.30
+    freshness: 0.20
+    quality: 0.20
+    schema_stability: 0.15
+    sla_compliance: 0.15
+  thresholds:
+    healthy: 90
+    warning: 75
+    degraded: 50
+
+agents:
+  llm_model: gemini-1.5-pro     # better model for production
+  llm_temperature: 0.1
+  llm_max_tokens: 4096
+  diagnosis_timeout_seconds: 60
+
+remediation:
+  max_retry_count: 3
+  retry_backoff_base_seconds: 60
+  quarantine_max_percentage: 0.05     # stricter than dev — escalate above 5%
+
+cloud_run:
+  min_instances: 1              # always warm — no cold start on incident response
+  max_instances: 20
+  timeout_seconds: 540          # 9 minutes max (Cloud Run limit)
+
+failure_injection:
+  enabled: false                # NEVER enabled in production
+
+logging:
+  level: INFO
