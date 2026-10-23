@@ -1,0 +1,82 @@
+name: Tests
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+    branches: [main, staging]
+
+jobs:
+  lint:
+    name: Lint and format check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dev dependencies
+        run: pip install ruff black
+
+      - name: Run ruff
+        run: ruff check .
+
+      - name: Check black formatting
+        run: black --check .
+
+  unit-tests:
+    name: Unit tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run unit tests
+        run: pytest tests/unit/ tests/agents/ -v --tb=short
+
+  safety-critical-tests:
+    name: Safety-critical tests
+    runs-on: ubuntu-latest
+    # These run as a separate job so failures are immediately visible.
+    # A failure here means the core safety guarantees are broken.
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run safety-critical tests
+        run: pytest tests/ -m safety_critical -v --tb=long
+        # tb=long because when safety tests fail, we want the full context
+
+  data-quality-tests:
+    name: Data quality tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run data quality tests
+        run: pytest tests/data_quality/ -v --tb=short

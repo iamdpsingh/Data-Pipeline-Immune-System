@@ -1,0 +1,49 @@
+name: Deploy to staging
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  deploy-staging:
+    name: Deploy immune service to staging
+    runs-on: ubuntu-latest
+    environment: staging
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Authenticate to GCP
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_STAGING_SA_KEY }}
+
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Build and push container
+        run: |
+          gcloud auth configure-docker gcr.io
+          docker build -t gcr.io/${{ vars.GCP_STAGING_PROJECT }}/immune-service:${{ github.sha }} .
+          docker push gcr.io/${{ vars.GCP_STAGING_PROJECT }}/immune-service:${{ github.sha }}
+
+      - name: Deploy to Cloud Run (staging)
+        run: |
+          gcloud run deploy immune-service \
+            --image gcr.io/${{ vars.GCP_STAGING_PROJECT }}/immune-service:${{ github.sha }} \
+            --region us-central1 \
+            --project ${{ vars.GCP_STAGING_PROJECT }} \
+            --no-allow-unauthenticated \
+            --set-env-vars ENVIRONMENT=staging
+
+      - name: Sync Airflow DAGs
+        run: |
+          gsutil -m rsync -r dags/ gs://${{ vars.STAGING_AIRFLOW_BUCKET }}/dags/
+
+      - name: Run smoke tests
+        run: |
+          pip install -r requirements.txt
+          python scripts/smoke_test.py --environment staging
+        env:
+          GOOGLE_CLOUD_PROJECT: ${{ vars.GCP_STAGING_PROJECT }}
+          ENVIRONMENT: staging
