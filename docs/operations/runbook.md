@@ -17,8 +17,8 @@ Day-to-day operational reference. Use this when setting up a new environment, de
 ### Step 1: Clone and install
 
 ```bash
-git clone https://github.com/your-org/data-pipeline-immune-system.git
-cd data-pipeline-immune-system
+git clone https://github.com/iamdpsingh/Data-Pipeline-Immune-System.git
+cd Data-Pipeline-Immune-System
 python -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
@@ -27,9 +27,8 @@ pip install -r requirements.txt
 ### Step 2: GCP project setup
 
 ```bash
-# Create the dev project (or use an existing one)
-gcloud projects create dpis-dev --name="DPIS Dev"
-gcloud config set project dpis-dev
+# Configure the project
+gcloud config set project data-pipeline-immune-system
 
 # Enable required APIs
 gcloud services enable \
