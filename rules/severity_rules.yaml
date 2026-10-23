@@ -1,0 +1,87 @@
+# Severity classification rules
+#
+# Maps incident types and conditions to severity levels (P0-P3).
+# The Detection Agent uses this to classify incidents. The Controller
+# uses severity to decide the urgency of the response.
+
+severity_levels:
+
+  P0:
+    label: Critical
+    description: >
+      Data corruption, privacy/security issue, major data loss, or incorrect
+      financial/business output. Stop everything and escalate immediately.
+    auto_remediation: false
+    requires_immediate_escalation: true
+    alert_channels:
+      - pagerduty
+      - email
+      - slack
+    conditions:
+      - incident_type: PII_EXPOSURE_RISK
+      - incident_type: FINANCIAL_RECORD_CORRUPTION
+      - incident_type: PRODUCTION_DATA_DELETION
+      - row_count_drop_percentage:
+          greater_than: 90
+          table_criticality: HIGH
+      - schema_change_type: DATA_CORRUPTION
+
+  P1:
+    label: High
+    description: >
+      Major pipeline failure, significant row count anomaly, or broken production
+      table. Attempt controlled remediation with close monitoring.
+    auto_remediation: true  # only for low-risk root causes
+    requires_immediate_escalation: false
+    alert_channels:
+      - email
+      - slack
+    conditions:
+      - incident_type: SCHEMA_BREAKING_CHANGE
+      - incident_type: CORRUPTED_FILE
+      - incident_type: REPEATED_FAILURE
+      - row_count_drop_percentage:
+          greater_than: 40
+      - row_count_drop_percentage:
+          greater_than: 20
+          table_criticality: HIGH
+      - referential_integrity_breach:
+          orphan_percentage_greater_than: 5
+
+  P2:
+    label: Medium
+    description: >
+      Moderate data quality degradation, delayed pipeline, or duplicate/null spike.
+      Auto-remediate if a rule permits. Monitor closely.
+    auto_remediation: true
+    requires_immediate_escalation: false
+    alert_channels:
+      - slack
+    conditions:
+      - incident_type: TRANSIENT_TASK_FAILURE
+      - incident_type: API_TIMEOUT
+      - incident_type: MISSING_PARTITION
+      - incident_type: FRESHNESS_FAILURE
+      - incident_type: NULL_SPIKE
+      - incident_type: DUPLICATE_SPIKE
+      - row_count_drop_percentage:
+          greater_than: 20
+      - sla_breach: true
+
+  P3:
+    label: Low
+    description: >
+      Small anomaly, warning, or minor schema addition. Log and monitor.
+      No immediate action required.
+    auto_remediation: true
+    requires_immediate_escalation: false
+    alert_channels:
+      - dashboard
+    conditions:
+      - incident_type: SCHEMA_ADDITIVE_CHANGE
+      - row_count_drop_percentage:
+          less_than: 20
+          greater_than: 10
+      - null_percentage_increase:
+          less_than: 0.02
+      - sla_warning: true  # approaching SLA but not breached yet
