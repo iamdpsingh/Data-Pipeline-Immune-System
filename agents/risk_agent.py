@@ -1,41 +1,30 @@
-"""
-Risk Agent
-
-Determines whether an incident can be safely auto-remediated, requires
-human approval, or must be blocked unconditionally.
+# ==============================================================================
+# Data Pipeline Immune System — Risk Assessment Agent (Phase 7)
+# ==============================================================================
+"""Determines whether an incident remediation action is safe to auto-execute.
 
 Permissions: READ ONLY
 Inputs: DiagnosisResult
-Outputs: RiskAssessment
+Outputs: RiskAssessment (risk level, auto-remediable, human approval, blocked)
 
-The Risk Agent is the critical safety gate between diagnosis and action.
-It enforces two layers of rules:
-
-  1. Never-allow rules (src/risk/never_allow.py) — these are enforced in
-     application code and cannot be overridden by LLM output, confidence
-     scores, or configuration.
-
-  2. Risk classification rules (rules/safety_rules.yaml) — these define
-     the risk level for each action type and whether human approval is needed.
-
-Confidence scores from the Diagnosis Agent influence risk assessment
-but never override safety rules. A 0.99 confidence score on a schema
-deletion action still produces NEVER_ALLOW.
-
-For the full safety model, see docs/security/security-model.md.
-For the safety rules policy, see rules/safety_rules.yaml.
+Architecture:
+- ADR-002: Read-only safety agent.
+- ADR-004: Confidence score never overrides safety rules or never-allow boundaries.
+- Default-to-safe principle: Ambiguity or unhandled cases mandate human approval.
 """
 
 from __future__ import annotations
 
 import logging
 from dataclasses import dataclass
+from datetime import datetime, timezone
 from enum import Enum
+from typing import Optional
 
-from src.config.loader import AgentConfig
-from src.risk.never_allow import check_never_allow
-from src.risk.safety_rules import SafetyRulesLoader
 from agents.diagnosis_agent import DiagnosisResult
+from src.config.settings import Settings, load_settings
+from src.risk.never_allow import check_never_allow
+from src.risk.safety_rules import ActionPolicy, SafetyRulesLoader
 
 logger = logging.getLogger(__name__)
 
@@ -61,30 +50,120 @@ class RiskAssessment:
     auto_remediable: bool
     requires_human_approval: bool
     blocked: bool
-    block_reason: str | None
-    approved_action: str | None
+    block_reason: Optional[str]
+    approved_action: Optional[str]
     assessed_at: str
 
 
 class RiskAgent:
-    """
-    Determines whether auto-remediation is safe for a given diagnosis.
+    """Evaluates proposed remediation actions against never-allow and safety policies."""
 
-    Permissions: READ ONLY
+    def __init__(
+        self,
+        settings: Optional[Settings] = None,
+        safety_rules: Optional[SafetyRulesLoader] = None,
+    ):
+        self.settings = settings or load_settings()
+        self.safety_rules = safety_rules or SafetyRulesLoader()
 
-    Default-to-safe: if this agent itself fails or produces an unexpected result,
-    the controller defaults to requires_human_approval = True.
-    """
+    def assess(self, input_data: RiskInput) -> RiskAssessment:
+        """Evaluates remediation action risk and produces safety authorization."""
+        now_str = datetime.now(timezone.utc).isoformat()
+        diag = input_data.diagnosis_result
+        action = diag.recommended_action
 
-    def __init__(self, config: AgentConfig):
-        self.config = config
-        self.safety_rules = SafetyRulesLoader(config.rules_path / "safety_rules.yaml")
+        logger.info(
+            "RiskAgent assessing incident=%s action='%s' confidence=%.2f",
+            input_data.incident_id,
+            action,
+            diag.confidence,
+        )
 
-    def assess(self, input: RiskInput) -> RiskAssessment:
-        """
-        Evaluate the risk of the proposed remediation action.
+        # 1. Hard Never-Allow Boundary Check (ADR-004)
+        if check_never_allow(action):
+            reason = f"Prohibited action '{action}' violates never-allow safety policy."
+            logger.critical("NEVER-ALLOW VIOLATION: %s for incident %s", action, input_data.incident_id)
+            return RiskAssessment(
+                incident_id=input_data.incident_id,
+                risk_level=RiskLevel.NEVER_ALLOW,
+                auto_remediable=False,
+                requires_human_approval=False,
+                blocked=True,
+                block_reason=reason,
+                approved_action=None,
+                assessed_at=now_str,
+            )
 
-        Never-allow check runs first. If the recommended action is on the
-        never-allow list, the result is BLOCKED regardless of everything else.
-        """
-        raise NotImplementedError("Risk agent implementation pending — Phase 7")
+        # 2. Retrieve policy for proposed action
+        policy: ActionPolicy = self.safety_rules.get_policy(action)
+
+        # 3. High Risk actions always require human authorization
+        if policy.risk_tier == "HIGH":
+            logger.warning("Action '%s' is HIGH risk. Requiring human approval.", action)
+            return RiskAssessment(
+                incident_id=input_data.incident_id,
+                risk_level=RiskLevel.HIGH,
+                auto_remediable=False,
+                requires_human_approval=True,
+                blocked=False,
+                block_reason=None,
+                approved_action=action,
+                assessed_at=now_str,
+            )
+
+        # 4. Medium Risk actions check minimum confidence
+        if policy.risk_tier == "MEDIUM":
+            if diag.confidence >= policy.min_confidence:
+                return RiskAssessment(
+                    incident_id=input_data.incident_id,
+                    risk_level=RiskLevel.MEDIUM,
+                    auto_remediable=True,
+                    requires_human_approval=False,
+                    blocked=False,
+                    block_reason=None,
+                    approved_action=action,
+                    assessed_at=now_str,
+                )
+            else:
+                logger.info(
+                    "Medium-risk action '%s' confidence (%.2f < %.2f) requires human approval.",
+                    action,
+                    diag.confidence,
+                    policy.min_confidence,
+                )
+                return RiskAssessment(
+                    incident_id=input_data.incident_id,
+                    risk_level=RiskLevel.MEDIUM,
+                    auto_remediable=False,
+                    requires_human_approval=True,
+                    blocked=False,
+                    block_reason=None,
+                    approved_action=action,
+                    assessed_at=now_str,
+                )
+
+        # 5. Low Risk actions are auto-remediable if confidence is acceptable
+        if policy.risk_tier == "LOW":
+            if diag.confidence >= policy.min_confidence:
+                return RiskAssessment(
+                    incident_id=input_data.incident_id,
+                    risk_level=RiskLevel.LOW,
+                    auto_remediable=True,
+                    requires_human_approval=False,
+                    blocked=False,
+                    block_reason=None,
+                    approved_action=action,
+                    assessed_at=now_str,
+                )
+
+        # Default-to-safe principle fallback
+        return RiskAssessment(
+            incident_id=input_data.incident_id,
+            risk_level=RiskLevel.HIGH,
+            auto_remediable=False,
+            requires_human_approval=True,
+            blocked=False,
+            block_reason=None,
+            approved_action=action,
+            assessed_at=now_str,
+        )
