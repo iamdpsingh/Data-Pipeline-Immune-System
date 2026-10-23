@@ -1,55 +1,41 @@
-"""
-Remediation Agent
+# ==============================================================================
+# Data Pipeline Immune System — Remediation Agent (Phase 8)
+# ==============================================================================
+"""Executes approved corrective actions.
 
-Executes approved corrective actions. This is the only agent with write
-permissions, and those permissions are strictly limited to pre-defined
-action handlers.
-
-Permissions: LIMITED WRITE (approved action library only)
+Permissions: LIMITED WRITE (strictly to approved action library)
 Inputs: RiskAssessment + optional ApprovalRecord (required for HIGH risk)
 Outputs: RemediationResult
 
-Every action executed by this agent:
-  - Must be in the approved action library (src/remediation/actions.py)
-  - Must have a corresponding entry in rules/remediation_rules.yaml
-  - Must be idempotent (safe to retry if the first attempt fails)
-  - Must produce an audit record in remediation_actions table
-
-The agent CANNOT:
-  - Execute arbitrary SQL
-  - Modify IAM permissions
-  - Write to silver or gold tables directly
-  - Delete production tables
-  - Run any action not in the approved library
-
-If called without a valid RiskAssessment in hand, it raises an exception.
-This is intentional — the agent must never run unsanctioned.
-
-For the full list of approved actions, see rules/remediation_rules.yaml.
-For the safety boundaries, see src/risk/never_allow.py.
+Architecture:
+- ADR-002: Limited write permissions restricted to pre-approved handlers.
+- ADR-004: Never executes never-allow actions.
+- Least privilege: Cannot run arbitrary SQL or alter unauthorized resources.
 """
 
 from __future__ import annotations
 
 import logging
-from dataclasses import dataclass
+from dataclasses import dataclass, field
+from datetime import datetime, timezone
+from typing import Any, Dict, Optional
 
-from src.config.loader import AgentConfig
-from src.observability.bigquery_client import BigQueryClient
-from src.remediation.actions import ActionLibrary
 from agents.risk_agent import RiskAssessment
+from src.config.settings import Settings, load_settings
+from src.remediation.actions import ActionLibrary
+from src.remediation.exceptions import RemediationNotAuthorisedError
 
 logger = logging.getLogger(__name__)
 
 
-@dataclass
+@dataclass(frozen=True)
 class RemediationResult:
     incident_id: str
     action_executed: str
     execution_status: str  # SUCCESS, FAILED, PARTIAL
     started_at: str
     completed_at: str
-    details: dict
+    details: Dict[str, Any]
 
 
 @dataclass(frozen=True)
@@ -61,28 +47,65 @@ class ApprovalRecord:
 
 
 class RemediationAgent:
-    """
-    Executes corrective actions from the approved action library.
+    """Executes corrective actions from the approved action library."""
 
-    Permissions: LIMITED WRITE
-    """
-
-    def __init__(self, config: AgentConfig, bq_client: BigQueryClient):
-        self.config = config
+    def __init__(
+        self,
+        settings: Optional[Settings] = None,
+        bq_client: Optional[Any] = None,
+        action_library: Optional[ActionLibrary] = None,
+    ):
+        self.settings = settings or load_settings()
         self.bq = bq_client
-        self.action_library = ActionLibrary(config, bq_client)
+        self.action_library = action_library or ActionLibrary(bq_client)
 
     def remediate(
         self,
         risk_assessment: RiskAssessment,
-        approval: ApprovalRecord | None = None,
+        approval: Optional[ApprovalRecord] = None,
+        execution_context: Optional[Dict[str, Any]] = None,
     ) -> RemediationResult:
-        """
-        Execute the approved remediation action.
+        """Executes the authorized remediation action."""
+        started_at = datetime.now(timezone.utc).isoformat()
+        action = risk_assessment.approved_action or ""
 
-        Raises RemediationNotAuthorisedError if:
-          - risk_assessment.blocked is True
-          - risk_assessment.requires_human_approval is True and approval is None
-          - The action is not in the approved library
-        """
-        raise NotImplementedError("Remediation agent implementation pending — Phase 8")
+        # 1. Check if action is blocked by never-allow rules
+        if risk_assessment.blocked:
+            raise RemediationNotAuthorisedError(
+                f"Action '{action}' is BLOCKED by never-allow policy. Reason: {risk_assessment.block_reason}"
+            )
+
+        # 2. Check human approval requirement
+        if risk_assessment.requires_human_approval and approval is None:
+            raise RemediationNotAuthorisedError(
+                f"Action '{action}' requires human approval before execution, but no ApprovalRecord was provided."
+            )
+
+        # 3. Check if action exists in approved library
+        if not self.action_library.is_action_supported(action):
+            raise RemediationNotAuthorisedError(
+                f"Action '{action}' is not present in approved action library."
+            )
+
+        logger.info(
+            "RemediationAgent executing '%s' for incident %s (Approval: %s)",
+            action,
+            risk_assessment.incident_id,
+            approval.approval_id if approval else "AUTOMATIC",
+        )
+
+        details = dict(execution_context or {})
+        details["incident_id"] = risk_assessment.incident_id
+
+        # Execute idempotent action
+        exec_outcome = self.action_library.execute(action, details)
+        completed_at = datetime.now(timezone.utc).isoformat()
+
+        return RemediationResult(
+            incident_id=risk_assessment.incident_id,
+            action_executed=action,
+            execution_status=exec_outcome.get("status", "SUCCESS"),
+            started_at=started_at,
+            completed_at=completed_at,
+            details=exec_outcome,
+        )
