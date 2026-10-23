@@ -1,0 +1,74 @@
+# Data Pipeline Immune System — .gitignore
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+*.egg
+*.egg-info/
+dist/
+build/
+.eggs/
+.pytest_cache/
+.coverage
+htmlcov/
+.mypy_cache/
+.ruff_cache/
+
+# Virtual environments
+.venv/
+venv/
+env/
+ENV/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Secrets — these should NEVER be committed
+*.json             # service account key files
+.env
+.env.*
+credentials.json
+service_account.json
+*-credentials.json
+*_key.json
+secrets.yaml
+secrets.yml
+
+# Terraform state — state should be in remote backend, not git
+*.tfstate
+*.tfstate.backup
+.terraform/
+.terraform.lock.hcl
+terraform.tfvars    # may contain sensitive values
+
+# GCP-specific
+gcloud-service-key.json
+application_default_credentials.json
+
+# Logs
+*.log
+logs/
+
+# Test artifacts
+.pytest_tmp/
+test-results/
+coverage.xml
+
+# Spark
+derby.log
+metastore_db/
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Distribution
+*.tar.gz
+*.zip
