@@ -1,112 +1,111 @@
-"""
-Failure injection: schema drift
-
-Simulates schema changes at the source — either additive (new column added)
-or breaking (existing column type changed or column removed).
+# ==============================================================================
+# Data Pipeline Immune System — Failure Injection: Schema Drift
+# ==============================================================================
+"""Simulates schema mutations at the source feed (additive, breaking, or PII).
 
 WHAT THIS SIMULATES:
-  An upstream system changes the schema of the data it delivers. This is
-  one of the most common real-world pipeline failures and one of the most
-  dangerous because it can silently corrupt data if undetected.
-
-SCENARIOS:
-
-  Additive (non-breaking):
-    Source adds a new column, e.g., `phone VARCHAR(20)`.
-    Expected response: P3, auto-handle by updating staging schema.
-
-  Breaking (type change):
-    Source changes `age INT` → `age VARCHAR(10)`.
-    Expected response: P1, BLOCK, human approval required.
-
-  Breaking (column removal):
-    Source drops a required column, e.g., removes `email`.
-    Expected response: P1, BLOCK, human approval required.
-
-  PII exposure:
-    Source adds a column matching PII patterns, e.g., `ssn`, `credit_card`.
-    Expected response: P0, BLOCK immediately, no auto-remediation.
-
-EXPECTED IMMUNE SYSTEM RESPONSE (additive):
-  1. Detection: SCHEMA_DRIFT, P3
-  2. Diagnosis: SCHEMA_ADDITIVE_CHANGE (confidence 0.99)
-  3. Risk: LOW
-  4. Remediation: ADD_COLUMN_TO_STAGING
-  5. Verification: schema matches updated expected schema
-  6. Resolution: RESOLVED
-
-EXPECTED IMMUNE SYSTEM RESPONSE (breaking):
-  1. Detection: SCHEMA_DRIFT, P1
-  2. Diagnosis: SCHEMA_BREAKING_CHANGE (confidence 0.99)
-  3. Risk: HIGH → human approval required
-  4. Dashboard: approval request appears
-  5. (after human approves) Remediation: QUARANTINE_BAD_RECORDS
-  6. Verification: valid records flow to production, bad records in quarantine
-  7. Resolution: RESOLVED
-
-USAGE:
-  python failure_injection/schema_drift.py --pipeline orders --type additive --column phone --dtype VARCHAR(20)
-  python failure_injection/schema_drift.py --pipeline orders --type breaking --column age --new-dtype VARCHAR(10)
-  python failure_injection/schema_drift.py --pipeline orders --type pii --column ssn
-
-DO NOT RUN IN PRODUCTION. See row_anomaly.py for the environment guard pattern.
+  Upstream source alters schema:
+  - Additive: New non-breaking field (e.g. phone VARCHAR(20))
+  - Breaking: Mutating column types or dropping mandatory fields
+  - PII: Injecting sensitive fields (SSN, credit card)
 """
 
+from __future__ import annotations
+
 import argparse
-import os
+import json
 import logging
+import os
+from pathlib import Path
+from typing import Any, Dict
 
 logger = logging.getLogger(__name__)
 
 
 def _check_injection_allowed() -> None:
-    env = os.getenv("ENVIRONMENT", "production")
+    """Hard environment guard preventing execution in production."""
+    env = os.getenv("ENVIRONMENT", "production").lower()
     if env == "production":
         override = os.getenv("DPIS_ALLOW_INJECTION_IN_PRODUCTION")
         if override != "I_UNDERSTAND_THE_RISK":
             raise EnvironmentError(
-                "Failure injection is disabled in production."
+                "Failure injection is disabled in production. "
+                "Set DPIS_ALLOW_INJECTION_IN_PRODUCTION=I_UNDERSTAND_THE_RISK to override."
             )
+    logger.info("Environment guard verified: executing injection in environment '%s'", env)
 
 
-def inject_additive_schema_change(pipeline_id: str, column: str, dtype: str) -> None:
-    """Add a new column to the source schema."""
-    raise NotImplementedError("Schema drift injection pending — Phase 11")
+def inject_additive_schema_change(source_file_path: str, column: str, default_val: Any = "N/A") -> None:
+    """Adds a new non-breaking column to the landing dataset."""
+    _check_injection_allowed()
+    path = Path(source_file_path)
+    records = _load_or_create_records(path)
+
+    for rec in records:
+        rec[column] = default_val
+
+    _write_records(path, records)
+    logger.info("Injected additive column '%s' into %s (%d records)", column, source_file_path, len(records))
 
 
-def inject_breaking_schema_change(
-    pipeline_id: str, column: str, new_dtype: str
-) -> None:
-    """Change an existing column's type to something incompatible."""
-    raise NotImplementedError("Schema drift injection pending — Phase 11")
+def inject_breaking_schema_change(source_file_path: str, column: str, new_val_type: str = "string") -> None:
+    """Mutates an existing column's data type to create an incompatible schema."""
+    _check_injection_allowed()
+    path = Path(source_file_path)
+    records = _load_or_create_records(path)
+
+    for rec in records:
+        if column in rec:
+            rec[column] = "CORRUPTED_TYPE_VAL" if new_val_type == "string" else None
+
+    _write_records(path, records)
+    logger.info("Injected breaking type change on column '%s' into %s", column, source_file_path)
 
 
-def inject_pii_column(pipeline_id: str, column: str) -> None:
-    """
-    Add a column with a PII-sounding name.
-    This should trigger P0 immediately with no auto-remediation.
-    """
-    raise NotImplementedError("Schema drift injection pending — Phase 11")
+def inject_pii_column(source_file_path: str, column: str = "customer_ssn") -> None:
+    """Adds a sensitive PII column triggering immediate P0 never-allow block."""
+    _check_injection_allowed()
+    path = Path(source_file_path)
+    records = _load_or_create_records(path)
+
+    for rec in records:
+        rec[column] = "000-12-3456"
+
+    _write_records(path, records)
+    logger.critical("Injected sensitive PII column '%s' into %s (P0 TRIGGER)", column, source_file_path)
+
+
+def _load_or_create_records(path: Path) -> list[Dict[str, Any]]:
+    if not path.exists():
+        return [
+            {"order_id": f"ORD-20261023-{i:04d}", "customer_id": f"CUST-{i:06d}", "total_amount": 99.5}
+            for i in range(100)
+        ]
+    with open(path, "r", encoding="utf-8") as f:
+        return [json.loads(line) for line in f if line.strip()]
+
+
+def _write_records(path: Path, records: list[Dict[str, Any]]) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with open(path, "w", encoding="utf-8") as f:
+        for r in records:
+            f.write(json.dumps(r) + "\n")
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Inject a schema drift scenario.")
-    parser.add_argument("--pipeline", required=True)
+    parser = argparse.ArgumentParser(description="Inject schema drift anomaly.")
+    parser.add_argument("--source-file", default="scratch/orders_sample.json")
     parser.add_argument("--type", choices=["additive", "breaking", "pii"], required=True)
-    parser.add_argument("--column", required=True)
-    parser.add_argument("--dtype", help="Data type (for additive changes)")
-    parser.add_argument("--new-dtype", help="New data type (for breaking changes)")
+    parser.add_argument("--column", default="phone")
     args = parser.parse_args()
 
     logging.basicConfig(level=logging.INFO)
-    _check_injection_allowed()
-
     if args.type == "additive":
-        inject_additive_schema_change(args.pipeline, args.column, args.dtype)
+        inject_additive_schema_change(args.source_file, args.column)
     elif args.type == "breaking":
-        inject_breaking_schema_change(args.pipeline, args.column, args.new_dtype)
+        inject_breaking_schema_change(args.source_file, args.column)
     elif args.type == "pii":
-        inject_pii_column(args.pipeline, args.column)
+        inject_pii_column(args.source_file, args.column)
 
 
 if __name__ == "__main__":
