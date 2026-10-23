@@ -1,0 +1,20 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "OrdersBronzeRecord",
+  "description": "Bronze raw landing schema preserving original payload with ingestion metadata",
+  "type": "object",
+  "required": ["order_id", "customer_id", "order_date", "status", "total_amount", "currency", "_source_file", "_ingested_at", "_run_id"],
+  "properties": {
+    "order_id": { "type": "string" },
+    "customer_id": { "type": "string" },
+    "order_date": { "type": "string" },
+    "status": { "type": "string" },
+    "total_amount": { "type": "number" },
+    "currency": { "type": "string" },
+    "items_count": { "type": ["integer", "null"] },
+    "created_at": { "type": ["string", "null"] },
+    "_source_file": { "type": "string" },
+    "_ingested_at": { "type": "string", "format": "date-time" },
+    "_run_id": { "type": "string" }
+  }
+}

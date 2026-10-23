@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "OrdersGoldDailySummary",
+  "description": "Gold layer aggregated daily sales, revenue, and customer metrics",
+  "type": "object",
+  "required": ["order_date", "total_orders", "completed_orders", "gross_revenue_usd", "avg_order_value_usd", "unique_customers", "_aggregated_at"],
+  "properties": {
+    "order_date": { "type": "string", "format": "date" },
+    "total_orders": { "type": "integer", "minimum": 0 },
+    "completed_orders": { "type": "integer", "minimum": 0 },
+    "cancelled_orders": { "type": "integer", "minimum": 0 },
+    "gross_revenue_usd": { "type": "number", "minimum": 0.0 },
+    "avg_order_value_usd": { "type": "number", "minimum": 0.0 },
+    "unique_customers": { "type": "integer", "minimum": 0 },
+    "_aggregated_at": { "type": "string", "format": "date-time" }
+  }
+}
