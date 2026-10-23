@@ -73,16 +73,23 @@ class RiskAgent:
         action = diag.recommended_action
 
         logger.info(
-            "RiskAgent assessing incident=%s action='%s' confidence=%.2f",
+            "RiskAgent assessing incident=%s action='%s' cause='%s' confidence=%.2f",
             input_data.incident_id,
             action,
+            diag.root_cause,
             diag.confidence,
         )
 
-        # 1. Hard Never-Allow Boundary Check (ADR-004)
-        if check_never_allow(action):
-            reason = f"Prohibited action '{action}' violates never-allow safety policy."
-            logger.critical("NEVER-ALLOW VIOLATION: %s for incident %s", action, input_data.incident_id)
+        # 1. Hard Never-Allow Boundary Check (ADR-004) & PII Block
+        if (
+            check_never_allow(action)
+            or action == "BLOCK_PIPELINE"
+            or diag.root_cause == "PII_EXPOSURE_RISK"
+        ):
+            reason = (
+                f"Prohibited action/cause '{action or diag.root_cause}' violates never-allow safety policy."
+            )
+            logger.critical("NEVER-ALLOW / HARD BLOCK: %s for incident %s", action, input_data.incident_id)
             return RiskAssessment(
                 incident_id=input_data.incident_id,
                 risk_level=RiskLevel.NEVER_ALLOW,
@@ -94,10 +101,24 @@ class RiskAgent:
                 assessed_at=now_str,
             )
 
-        # 2. Retrieve policy for proposed action
+        # 2. Breaking schema change explicitly mandates human authorization
+        if diag.root_cause == "SCHEMA_BREAKING_CHANGE":
+            logger.warning("Root cause SCHEMA_BREAKING_CHANGE requires explicit human approval.")
+            return RiskAssessment(
+                incident_id=input_data.incident_id,
+                risk_level=RiskLevel.HIGH,
+                auto_remediable=False,
+                requires_human_approval=True,
+                blocked=False,
+                block_reason=None,
+                approved_action=action,
+                assessed_at=now_str,
+            )
+
+        # 3. Retrieve policy for proposed action
         policy: ActionPolicy = self.safety_rules.get_policy(action)
 
-        # 3. High Risk actions always require human authorization
+        # 4. High Risk actions always require human authorization
         if policy.risk_tier == "HIGH":
             logger.warning("Action '%s' is HIGH risk. Requiring human approval.", action)
             return RiskAssessment(
@@ -111,7 +132,7 @@ class RiskAgent:
                 assessed_at=now_str,
             )
 
-        # 4. Medium Risk actions check minimum confidence
+        # 5. Medium Risk actions check minimum confidence
         if policy.risk_tier == "MEDIUM":
             if diag.confidence >= policy.min_confidence:
                 return RiskAssessment(
@@ -125,12 +146,6 @@ class RiskAgent:
                     assessed_at=now_str,
                 )
             else:
-                logger.info(
-                    "Medium-risk action '%s' confidence (%.2f < %.2f) requires human approval.",
-                    action,
-                    diag.confidence,
-                    policy.min_confidence,
-                )
                 return RiskAssessment(
                     incident_id=input_data.incident_id,
                     risk_level=RiskLevel.MEDIUM,
@@ -142,7 +157,7 @@ class RiskAgent:
                     assessed_at=now_str,
                 )
 
-        # 5. Low Risk actions are auto-remediable if confidence is acceptable
+        # 6. Low Risk actions are auto-remediable if confidence is acceptable
         if policy.risk_tier == "LOW":
             if diag.confidence >= policy.min_confidence:
                 return RiskAssessment(
