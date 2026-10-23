@@ -37,15 +37,15 @@ controller = ImmuneSystemController(settings=settings)
 
 
 class RunCompletionPayload(BaseModel):
-    pipeline_id: str = Field(..., example="orders")
-    run_id: str = Field(..., example="run-20261023-001")
+    pipeline_id: str = Field(..., json_schema_extra={"example": "orders"})
+    run_id: str = Field(..., json_schema_extra={"example": "run-20261023-001"})
     context: Dict[str, Any] = Field(default_factory=dict)
 
 
 class ApprovalPayload(BaseModel):
-    incident_id: str = Field(..., example="inc-77f98d")
-    approved_by: str = Field(..., example="data_engineer@company.com")
-    approval_id: str = Field(..., example="appr-20261023-01")
+    incident_id: str = Field(..., json_schema_extra={"example": "inc-77f98d"})
+    approved_by: str = Field(..., json_schema_extra={"example": "data_engineer@company.com"})
+    approval_id: str = Field(..., json_schema_extra={"example": "appr-20261023-01"})
     pipeline_id: str = Field(default="orders")
     run_id: str = Field(default="run-manual")
     context: Dict[str, Any] = Field(default_factory=dict)
