@@ -1,0 +1,108 @@
+# Remediation rules — what the Remediation Agent is allowed to do per root cause.
+#
+# This maps root_cause → approved action. The Risk Agent checks safety_rules.yaml
+# first (for never-allow and high-risk rules). This file defines the specific
+# action to execute once the risk level has been cleared.
+#
+# Every action here maps to a handler in src/remediation/actions.py.
+
+actions:
+
+  - root_cause: TRANSIENT_TASK_FAILURE
+    action: RETRY_TASK
+    max_retries: 3
+    backoff: exponential
+    backoff_base_seconds: 30
+    idempotent: true
+    verification_required: true
+
+  - root_cause: API_TIMEOUT
+    action: RETRY_SOURCE_EXTRACTION
+    max_retries: 3
+    backoff: exponential
+    backoff_base_seconds: 60
+    idempotent: true
+    verification_required: true
+
+  - root_cause: MISSING_PARTITION
+    action: REPROCESS_PARTITION
+    conditions:
+      - source_available: true
+    idempotent: true
+    verification_required: true
+    note: >
+      Delete the target partition and rerun the Spark job for that date.
+      Safe because we're rebuilding from source.
+
+  - root_cause: CORRUPTED_FILE
+    action: RELOAD_SOURCE_FILE
+    conditions:
+      - source_reachable: true
+    idempotent: true
+    verification_required: true
+    note: >
+      Re-download the source file, validate checksum, re-run ingestion.
+      Old file is archived to quarantine bucket before deletion.
+
+  - root_cause: UPSTREAM_PARTIAL_LOAD
+    action: RETRY_SOURCE_EXTRACTION
+    conditions:
+      - source_now_complete: true  # detection should confirm source has full data
+    max_retries: 2
+    idempotent: true
+    verification_required: true
+
+  - root_cause: SCHEMA_ADDITIVE_CHANGE
+    action: ADD_COLUMN_TO_STAGING
+    conditions:
+      - schema_change_type: ADDITIVE
+      - target_layer: bronze  # never auto-apply to silver or gold
+    idempotent: true
+    verification_required: true
+    note: >
+      Additive changes (new columns) are safe to apply to staging/bronze tables
+      automatically. Silver and gold schema changes always require human review.
+
+  - root_cause: SCHEMA_BREAKING_CHANGE
+    action: QUARANTINE_BAD_RECORDS
+    requires_human_approval: true
+    verification_required: true
+    note: >
+      Route records with the breaking schema to quarantine. Pipeline continues
+      for records that match the expected schema. Human decides what to do with
+      the quarantined records.
+
+  - root_cause: PII_EXPOSURE_RISK
+    action: BLOCK_PIPELINE
+    requires_human_approval: false  # Block immediately, no approval wait
+    verification_required: false
+    note: >
+      Pipeline is blocked immediately. No data flows to any downstream table.
+      Human must investigate and explicitly clear the block.
+
+  - root_cause: NULL_SOURCE_DATA
+    action: QUARANTINE_BAD_RECORDS
+    conditions:
+      - bad_record_percentage_less_than: 0.10  # quarantine up to 10%, fail above
+    idempotent: true
+    verification_required: true
+
+  - root_cause: FRESHNESS_FAILURE
+    action: RERUN_FAILED_DAG
+    conditions:
+      - pipeline_not_currently_running: true
+    max_retries: 2
+    idempotent: true
+    verification_required: true
+
+  - root_cause: REPEATED_FAILURE
+    action: ESCALATE_TO_HUMAN
+    note: >
+      Repeated failures indicate a systemic problem that auto-remediation
+      cannot solve. Human investigation required.
+
+  - root_cause: UNKNOWN
+    action: ESCALATE_TO_HUMAN
+    note: >
+      If we don't know the root cause, we don't attempt auto-remediation.
+      A wrong fix on an unknown problem could make things worse.
