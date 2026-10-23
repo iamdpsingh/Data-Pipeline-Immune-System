@@ -1,0 +1,111 @@
+# Safety rules — enforced in application code, NOT by the LLM.
+#
+# This file defines what the Risk Agent reads when checking whether an action
+# is safe. Never-allow rules are ALSO enforced in src/risk/never_allow.py.
+# If the two are inconsistent, the code wins. The code is the hard boundary.
+#
+# Risk levels: LOW, MEDIUM, HIGH, CRITICAL, NEVER_ALLOW
+
+never_allow:
+  # These actions are blocked unconditionally, regardless of confidence score,
+  # diagnosis, or any human approval. The system cannot auto-approve these
+  # under any circumstances.
+  - action: DELETE_PRODUCTION_TABLE
+    reason: Irreversible. Data cannot be recovered without a restore process.
+
+  - action: DROP_SCHEMA
+    reason: Irreversible schema destruction.
+
+  - action: EXECUTE_ARBITRARY_SQL
+    reason: Unrestricted SQL execution is the root cause of most data disasters.
+
+  - action: MODIFY_IAM_PERMISSION
+    reason: IAM changes affect the entire security posture, not just one pipeline.
+
+  - action: DISABLE_VALIDATION
+    reason: Disabling validation defeats the purpose of the immune system.
+
+  - action: BYPASS_QUALITY_GATE
+    reason: Same as disabling validation.
+
+  - action: EXPOSE_PII_COLUMN
+    reason: Data privacy. Non-negotiable.
+
+  - action: MODIFY_FINANCIAL_RECORD
+    reason: Financial data integrity. Requires manual audit trail, not automation.
+
+  - action: DELETE_QUARANTINE_TABLE
+    reason: Quarantine records may be needed for compliance or reprocessing.
+
+  - action: DELETE_INCIDENT_MEMORY
+    reason: Historical incident knowledge cannot be destroyed by automation.
+
+high_risk:
+  # These require human approval before execution, regardless of confidence.
+  # The system presents the proposed action on the dashboard with full context.
+
+  - action: SCHEMA_BREAKING_CHANGE
+    reason: Breaking schema changes affect all downstream consumers.
+    requires_approval: true
+
+  - action: REBUILD_GOLD_TABLE
+    reason: Gold tables are downstream business-facing. Full rebuilds are disruptive.
+    requires_approval: true
+
+  - action: LARGE_DATA_DELETION
+    threshold_rows: 100000  # deleting more than this requires approval
+    reason: Large deletions are difficult to recover from.
+    requires_approval: true
+
+  - action: REPROCESS_ALL_PARTITIONS
+    reason: Full reprocessing of all partitions is expensive and disruptive.
+    requires_approval: true
+
+medium_risk:
+  # Auto-approved if the rule engine classifies the root cause correctly
+  # and confidence >= 0.75. Otherwise escalated to human.
+
+  - action: ADD_COLUMN_TO_SILVER
+    reason: Additive schema changes to silver tables affect downstream consumers
+            but are non-breaking. Auto-approved only for confirmed additive changes.
+    min_confidence: 0.75
+
+  - action: QUARANTINE_BAD_RECORDS
+    reason: Quarantine separates bad data from good, but should be validated.
+    min_confidence: 0.75
+
+  - action: REBUILD_STAGING_TABLE
+    reason: Rebuilds the bronze layer, which requires re-ingestion.
+    min_confidence: 0.80
+
+low_risk:
+  # Auto-approved. These are safe, reversible, and well-understood.
+
+  - action: RETRY_TASK
+    conditions:
+      - retry_count_less_than: 3
+      - error_type: transient
+    reason: Transient failures are expected and retrying is the correct response.
+
+  - action: RETRY_SOURCE_EXTRACTION
+    conditions:
+      - api_reachable: true
+    reason: If the source is available, re-fetching is safe and idempotent.
+
+  - action: REPROCESS_PARTITION
+    conditions:
+      - partition_date_not_current: true  # don't reprocess today's partition mid-run
+      - source_available: true
+    reason: Partition reprocessing is idempotent and limited in scope.
+
+  - action: RELOAD_SOURCE_FILE
+    conditions:
+      - source_available: true
+      - checksum_mismatch: true
+    reason: Re-downloading a corrupted file and re-ingesting is safe and well-scoped.
+
+  - action: RERUN_FAILED_DAG
+    conditions:
+      - retry_count_less_than: 3
+      - failure_is_transient: true
+    reason: Reruns are idempotent for well-written DAGs.
