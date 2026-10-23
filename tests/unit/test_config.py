@@ -7,7 +7,7 @@ from src.config.settings import load_settings
 def test_load_settings_dev():
     settings = load_settings("dev")
     assert settings.environment == "dev"
-    assert settings.project.id == "dpis-dev"
+    assert settings.project.id == "data-pipeline-immune-system"
     assert settings.project.dataset == "dpis_dev"
     assert settings.failure_injection.enabled is True
     assert settings.detection.row_count_zscore_threshold == 2.0

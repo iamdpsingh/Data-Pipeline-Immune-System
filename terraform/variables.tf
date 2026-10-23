@@ -5,7 +5,7 @@
 variable "project_id" {
   description = "The GCP Project ID where resources will be provisioned."
   type        = string
-  default     = "dpis-dev"
+  default     = "data-pipeline-immune-system"
 }
 
 variable "region" {

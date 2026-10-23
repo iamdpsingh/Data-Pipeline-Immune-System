@@ -8,7 +8,7 @@
 # to run without real source data at realistic volumes.
 
 project:
-  id: dpis-dev
+  id: data-pipeline-immune-system
   dataset: dpis_dev
   location: us-central1
 
