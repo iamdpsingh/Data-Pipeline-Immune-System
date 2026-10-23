@@ -1,0 +1,61 @@
+# Staging environment configuration
+# Used when ENVIRONMENT=staging
+#
+# Staging mirrors production configuration as closely as possible,
+# validating threshold sensitivity against realistic data patterns before production release.
+
+project:
+  id: dpis-staging
+  dataset: dpis_staging
+  location: us-central1
+
+gcs:
+  source_bucket: dpis-staging-source
+  bronze_bucket: dpis-staging-bronze
+  quarantine_bucket: dpis-staging-quarantine
+
+detection:
+  row_count_zscore_threshold: 3.0
+  min_baseline_runs: 10
+  baseline_lookback_days: 21
+  freshness_sla_minutes: 60
+
+quality:
+  null_threshold: 0.05
+  duplicate_threshold: 0.02
+  volume_lower_bound: 0.80
+  volume_upper_bound: 1.20
+
+health_score:
+  weights:
+    reliability: 0.30
+    freshness: 0.20
+    quality: 0.20
+    schema_stability: 0.15
+    sla_compliance: 0.15
+  thresholds:
+    healthy: 90
+    warning: 75
+    degraded: 50
+
+agents:
+  llm_model: gemini-1.5-flash
+  llm_temperature: 0.1
+  llm_max_tokens: 2048
+  diagnosis_timeout_seconds: 45
+
+remediation:
+  max_retry_count: 3
+  retry_backoff_base_seconds: 45
+  quarantine_max_percentage: 0.05
+
+cloud_run:
+  min_instances: 0
+  max_instances: 10
+  timeout_seconds: 300
+
+failure_injection:
+  enabled: false
+
+logging:
+  level: INFO
