@@ -1,34 +1,29 @@
-"""
-Diagnosis Agent
-
-Determines the most probable root cause of a detected incident by
-investigating pipeline metadata, run history, quality results, and
-historical incident memory.
+# ==============================================================================
+# Data Pipeline Immune System — Diagnosis Agent (Phase 6)
+# ==============================================================================
+"""Determines the most probable root cause of a detected pipeline incident.
 
 Permissions: READ ONLY
 Inputs: DetectionResult + incident_id
 Outputs: DiagnosisResult with root_cause, confidence, evidence, recommended_action
 
-The agent first checks the deterministic rule engine (detection_rules.yaml).
-Only if no rule matches does it invoke the LLM with a structured context prompt.
-The LLM cannot write anything — it only produces a structured JSON response
-that the agent validates and returns to the controller.
-
-For the investigation methodology and root cause taxonomy,
-see docs/architecture/agent-architecture.md.
+Architecture:
+- ADR-002: Read-only specialized agent.
+- ADR-003: Rules engine runs before LLM.
+- ADR-006: Incident memory similarity lookup for historical context.
 """
 
 from __future__ import annotations
 
 import logging
-from dataclasses import dataclass
+from dataclasses import dataclass, field
+from datetime import datetime, timezone
+from typing import Any, Dict, List, Optional
 
-from src.config.loader import AgentConfig
-from src.observability.bigquery_client import BigQueryClient
-from src.diagnosis.rule_engine import RuleEngine
-from src.diagnosis.llm_client import LLMClient
-from src.memory.incident_memory import IncidentMemory
 from agents.detection_agent import DetectionResult
+from src.config.settings import Settings, load_settings
+from src.diagnosis.llm_client import LLMClient
+from src.memory.incident_memory import HistoricalIncident, IncidentMemory
 
 logger = logging.getLogger(__name__)
 
@@ -37,6 +32,7 @@ logger = logging.getLogger(__name__)
 class DiagnosisInput:
     incident_id: str
     detection_result: DetectionResult
+    affected_table: str = "orders_silver"
 
 
 @dataclass(frozen=True)
@@ -46,38 +42,84 @@ class DiagnosisResult:
     affected_pipeline: str
     affected_table: str
     confidence: float
-    evidence: list[str]
+    evidence: List[str]
     recommended_action: str
-    similar_incidents: list[str]  # incident IDs from memory, for traceability
+    similar_incidents: List[str]
     diagnosed_at: str
-    used_llm: bool  # whether LLM was invoked (False = deterministic rule matched)
+    used_llm: bool
 
 
 class DiagnosisAgent:
-    """
-    Determines the probable root cause of an incident.
-
-    Permissions: READ ONLY
-    """
+    """Determines the probable root cause of an incident."""
 
     def __init__(
         self,
-        config: AgentConfig,
-        bq_client: BigQueryClient,
-        llm_client: LLMClient,
-        memory: IncidentMemory,
+        settings: Optional[Settings] = None,
+        llm_client: Optional[LLMClient] = None,
+        memory: Optional[IncidentMemory] = None,
     ):
-        self.config = config
-        self.bq = bq_client
-        self.rule_engine = RuleEngine(config.diagnosis)
-        self.llm = llm_client
-        self.memory = memory
+        self.settings = settings or load_settings()
+        self.llm = llm_client or LLMClient(
+            model_name=self.settings.agents.llm_model,
+            temperature=self.settings.agents.llm_temperature,
+            max_tokens=self.settings.agents.llm_max_tokens,
+        )
+        self.memory = memory or IncidentMemory(dataset=self.settings.project.dataset)
 
-    def diagnose(self, input: DiagnosisInput) -> DiagnosisResult:
-        """
-        Investigate the incident and produce a root cause diagnosis.
+    def diagnose(self, input_data: DiagnosisInput) -> DiagnosisResult:
+        """Investigates incident symptoms and returns a diagnostic conclusion."""
+        now_str = datetime.now(timezone.utc).isoformat()
+        det = input_data.detection_result
 
-        Returns root_cause = UNKNOWN with confidence < 0.5 if evidence
-        is insufficient. The controller treats UNKNOWN as requiring human review.
-        """
-        raise NotImplementedError("Diagnosis agent implementation pending — Phase 6")
+        logger.info(
+            "DiagnosisAgent evaluating incident %s for pipeline '%s'",
+            input_data.incident_id,
+            det.pipeline_id,
+        )
+
+        # 1. Query memory for past similar incidents (ADR-006)
+        similar_past = self.memory.find_similar(
+            pipeline_id=det.pipeline_id,
+            incident_type=det.anomaly_type or "UNKNOWN",
+            symptoms=det.evidence,
+            limit=3,
+        )
+        similar_ids = [inc.incident_id for inc in similar_past]
+
+        # 2. Check if Detection already resolved root cause deterministically (ADR-003)
+        if det.recommended_action and det.confidence >= 0.90:
+            logger.info("Using deterministic diagnosis for incident %s", input_data.incident_id)
+            return DiagnosisResult(
+                incident_id=input_data.incident_id,
+                root_cause=det.anomaly_type or "DETERMINISTIC_FAILURE",
+                affected_pipeline=det.pipeline_id,
+                affected_table=input_data.affected_table,
+                confidence=det.confidence,
+                evidence=det.evidence,
+                recommended_action=det.recommended_action,
+                similar_incidents=similar_ids,
+                diagnosed_at=now_str,
+                used_llm=False,
+            )
+
+        # 3. Escalate to LLM reasoning if unknown / ambiguous pattern
+        logger.info("Deterministic rule was ambiguous. Invoking LLM reasoning...")
+        llm_res = self.llm.diagnose_failure(
+            pipeline_id=det.pipeline_id,
+            anomaly_type=det.anomaly_type or "UNKNOWN",
+            evidence=det.evidence,
+            similar_incidents=[{"id": s.incident_id, "cause": s.root_cause} for s in similar_past],
+        )
+
+        return DiagnosisResult(
+            incident_id=input_data.incident_id,
+            root_cause=llm_res.root_cause,
+            affected_pipeline=det.pipeline_id,
+            affected_table=input_data.affected_table,
+            confidence=llm_res.confidence,
+            evidence=llm_res.evidence,
+            recommended_action=llm_res.recommended_action,
+            similar_incidents=similar_ids,
+            diagnosed_at=now_str,
+            used_llm=True,
+        )
