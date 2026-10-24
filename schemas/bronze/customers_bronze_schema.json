@@ -1,0 +1,26 @@
+{
+  "table": "dpis_bronze_dev.customers_raw",
+  "partition_by": "_ingested_at",
+  "columns": [
+    {
+      "name": "_raw_payload",
+      "type": "JSON",
+      "mode": "REQUIRED"
+    },
+    {
+      "name": "_ingested_at",
+      "type": "TIMESTAMP",
+      "mode": "REQUIRED"
+    },
+    {
+      "name": "_source_file",
+      "type": "STRING",
+      "mode": "REQUIRED"
+    },
+    {
+      "name": "_batch_id",
+      "type": "STRING",
+      "mode": "REQUIRED"
+    }
+  ]
+}
