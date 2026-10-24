@@ -1,0 +1,45 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "PaymentsSourcePayload",
+  "type": "object",
+  "required": [
+    "payment_id",
+    "order_id",
+    "amount",
+    "currency",
+    "payment_method",
+    "timestamp"
+  ],
+  "properties": {
+    "payment_id": {
+      "type": "string"
+    },
+    "order_id": {
+      "type": "string"
+    },
+    "amount": {
+      "type": "number",
+      "minimum": 0.01
+    },
+    "currency": {
+      "type": "string",
+      "maxLength": 3
+    },
+    "payment_method": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "SUCCESS",
+        "FAILED",
+        "PENDING",
+        "REFUNDED"
+      ]
+    },
+    "timestamp": {
+      "type": "string",
+      "format": "date-time"
+    }
+  }
+}
