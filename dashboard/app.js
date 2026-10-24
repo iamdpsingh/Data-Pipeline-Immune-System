@@ -2,7 +2,7 @@
 // Data Pipeline Immune System — Industrial Dashboard Interactive Controller
 // ==============================================================================
 
-const CLOUD_RUN_API_BASE = "https://dpis-dev-api-78310118782.us-central1.run.app";
+const CLOUD_RUN_API_BASE = window.DPIS_API_BASE || (window.location.protocol.startsWith('http') && window.location.origin.includes('run.app') ? window.location.origin : (window.location.protocol.startsWith('http') && window.location.port === '8080' ? window.location.origin : ""));
 
 const initialIncidents = [
   {
