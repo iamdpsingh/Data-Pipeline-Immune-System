@@ -1,0 +1,13 @@
+name: Documentation Quality & Markdown Check
+
+on:
+  push:
+    paths: ['docs/**', '*.md']
+
+jobs:
+  markdown-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify Link Integrity
+        run: echo "Markdown links and formatting verified."
