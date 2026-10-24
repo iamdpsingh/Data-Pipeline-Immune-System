@@ -1,0 +1,14 @@
+# Warehouse Inventory Anomaly Rules
+rules:
+  - id: IR_NEGATIVE_STOCK
+    field: quantity_on_hand
+    condition: "< 0"
+    severity: P1
+    action: QUARANTINE_PARTITION
+    description: "Negative warehouse stock indicates un-reconciled ledger discrepancy."
+  - id: IR_SUDDEN_DEPLETION
+    field: daily_drop_pct
+    condition: "> 85.0"
+    severity: P2
+    action: NOTIFY_OPERATOR
+    description: "Unusual 85%+ intraday stockout drop triggers alert."
