@@ -12,7 +12,7 @@ jobs:
     if: ${{ secrets.GCP_STAGING_SA_KEY != '' }}
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Authenticate to GCP
         uses: google-github-actions/auth@v2
