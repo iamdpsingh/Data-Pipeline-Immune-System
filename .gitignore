@@ -29,16 +29,26 @@ ENV/
 *.swp
 *.swo
 
-# Secrets — these should NEVER be committed
-*.json             # service account key files
+# Secrets & Credentials — strictly forbidden in git
+*.env
 .env
 .env.*
-credentials.json
-service_account.json
-*-credentials.json
-*_key.json
+*.key
+*.pem
+*.p12
+*.crt
+*_rsa
+id_rsa*
 secrets.yaml
 secrets.yml
+*service_account*.json
+*credential*.json
+*credentials*.json
+gcloud-service-key.json
+application_default_credentials.json
+
+# Whitelist schema definitions
+!schemas/**/*.json
 
 # Terraform state — state should be in remote backend, not git
 *.tfstate
