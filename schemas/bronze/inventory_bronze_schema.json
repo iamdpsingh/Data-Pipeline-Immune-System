@@ -1,0 +1,16 @@
+{
+  "table": "dpis_bronze_dev.inventory_snapshots_raw",
+  "partition_by": "_snapshot_date",
+  "columns": [
+    {
+      "name": "_raw_payload",
+      "type": "JSON",
+      "mode": "REQUIRED"
+    },
+    {
+      "name": "_snapshot_date",
+      "type": "DATE",
+      "mode": "REQUIRED"
+    }
+  ]
+}
