@@ -191,6 +191,7 @@ class DailyReportGenerator:
 
     def render_text_report(self, metrics: DailyReportMetrics) -> str:
         """Renders plain-text fallback format."""
+        cloud_run_url = os.getenv("CLOUD_RUN_URL", "https://dpis-api.internal")
         return (
             f"DATA PIPELINE IMMUNE SYSTEM — DAILY REPORT\n"
             f"Date: {metrics.report_date} | Environment: {metrics.environment.upper()}\n"
@@ -203,7 +204,7 @@ class DailyReportGenerator:
             f"• Quarantined Records:   {metrics.quarantined_records_count}\n"
             f"--------------------------------------------------\n"
             f"Lakehouse Tiers (Bronze, Silver, Gold): ALL SYSTEMS NOMINAL\n"
-            f"Cloud Run Endpoint: https://dpis-dev-api-78310118782.us-central1.run.app\n"
+            f"Controller Endpoint: {cloud_run_url}\n"
         )
 
 
