@@ -1,0 +1,14 @@
+# Tier-1 Pipeline Freshness & Availability SLAs
+slas:
+  orders_pipeline:
+    max_freshness_minutes: 60
+    min_availability_pct: 99.9
+    max_mttr_minutes: 3.0
+  payments_pipeline:
+    max_freshness_minutes: 30
+    min_availability_pct: 99.99
+    max_mttr_minutes: 1.5
+  inventory_pipeline:
+    max_freshness_minutes: 120
+    min_availability_pct: 99.5
+    max_mttr_minutes: 10.0
