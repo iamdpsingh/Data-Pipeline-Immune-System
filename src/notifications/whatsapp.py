@@ -1,10 +1,15 @@
 # ==============================================================================
-# Data Pipeline Immune System — WhatsApp Hourly Alert Dispatcher
+# Data Pipeline Immune System — Mobile & WhatsApp Alert Dispatcher (100% Free Services)
 # ==============================================================================
-"""Hourly operational status dispatcher for WhatsApp.
+"""Hourly operational status dispatcher for WhatsApp & Mobile Notifications.
 
 Broadcasts pipeline health pulses, active incident notices, and quarantine summaries
-to the data platform engineer's mobile device via Twilio or Meta WhatsApp Cloud API.
+to the data platform engineer's mobile device using 100% FREE services:
+1. Meta WhatsApp Cloud API (Official free tier: 1,000 free conversations/month)
+2. Telegram Bot API (100% Free forever: instant push notifications to mobile)
+3. ntfy.sh (100% Free & Open-Source: direct push notifications to Android/iOS)
+4. Google Cloud Pub/Sub (GCP native free tier: 10 GB/month)
+5. Free Webhooks (Google Chat, Slack, Discord)
 """
 
 from __future__ import annotations
@@ -15,27 +20,39 @@ from datetime import datetime, timezone
 from typing import Any, Dict, Optional
 import requests
 
-logger = logging.getLogger("dpis.notifications.whatsapp")
+logger = logging.getLogger("dpis.notifications.mobile_pulse")
 
 
 class WhatsAppAlertDispatcher:
-    """Dispatches hourly operational health telemetry to WhatsApp."""
+    """Dispatches hourly operational health telemetry via free mobile & messaging channels."""
 
     def __init__(
         self,
         api_token: Optional[str] = None,
         phone_number_id: Optional[str] = None,
-        twilio_sid: Optional[str] = None,
-        twilio_token: Optional[str] = None,
-        from_number: Optional[str] = None,
+        telegram_bot_token: Optional[str] = None,
+        telegram_chat_id: Optional[str] = None,
+        ntfy_topic: Optional[str] = None,
         webhook_url: Optional[str] = None,
+        pubsub_topic: Optional[str] = None,
+        from_number: Optional[str] = None,
     ):
+        # 1. Meta WhatsApp Cloud API (Free Tier: 1,000 free conversations/mo)
         self.api_token = api_token or os.getenv("WHATSAPP_API_TOKEN")
         self.phone_number_id = phone_number_id or os.getenv("WHATSAPP_PHONE_NUMBER_ID")
-        self.twilio_sid = twilio_sid or os.getenv("TWILIO_ACCOUNT_SID")
-        self.twilio_token = twilio_token or os.getenv("TWILIO_AUTH_TOKEN")
-        self.from_number = from_number or os.getenv("WHATSAPP_FROM_NUMBER", "whatsapp:+14155238886")
-        self.webhook_url = webhook_url or os.getenv("WHATSAPP_WEBHOOK_URL")
+
+        # 2. Telegram Bot API (100% Free Forever)
+        self.telegram_bot_token = telegram_bot_token or os.getenv("TELEGRAM_BOT_TOKEN")
+        self.telegram_chat_id = telegram_chat_id or os.getenv("TELEGRAM_CHAT_ID")
+
+        # 3. ntfy.sh (100% Free Push Notifications to Phone)
+        self.ntfy_topic = ntfy_topic or os.getenv("NTFY_TOPIC", "dpis-pipeline-alerts")
+
+        # 4. Free Webhook (Discord / Slack / Google Chat)
+        self.webhook_url = webhook_url or os.getenv("ALERT_WEBHOOK_URL")
+
+        # 5. GCP Pub/Sub Topic
+        self.pubsub_topic = pubsub_topic or os.getenv("GCP_PUBSUB_TOPIC", "dpis-operational-alerts")
 
     def format_hourly_alert(
         self,
@@ -46,7 +63,7 @@ class WhatsAppAlertDispatcher:
         healed_today: int = 2,
         quarantined_last_hour: int = 0,
     ) -> str:
-        """Constructs an operational WhatsApp markdown alert message."""
+        """Constructs an operational markdown alert message."""
         now_utc = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:00 UTC")
         status_emoji = "🟢" if health_status == "HEALTHY" else "🟡" if health_status == "WARNING" else "🔴"
 
@@ -72,42 +89,10 @@ class WhatsAppAlertDispatcher:
         message: Optional[str] = None,
         **kwargs: Any,
     ) -> bool:
-        """Sends hourly notification to the specified WhatsApp number."""
+        """Sends hourly notification to the specified recipient via free channels."""
         payload_text = message or self.format_hourly_alert(**kwargs)
 
-        # 1. Direct Webhook Dispatch (e.g. Zapier, Make, custom WhatsApp bot)
-        if self.webhook_url:
-            try:
-                resp = requests.post(
-                    self.webhook_url,
-                    json={"to": recipient_phone, "message": payload_text},
-                    timeout=10,
-                )
-                if resp.status_code in (200, 201, 202):
-                    logger.info("WhatsApp alert sent via Webhook to %s", recipient_phone)
-                    return True
-            except Exception as exc:
-                logger.error("Error sending WhatsApp webhook: %s", exc)
-
-        # 2. Twilio WhatsApp API Dispatch
-        if self.twilio_sid and self.twilio_token:
-            try:
-                endpoint = f"https://api.twilio.com/2010-04-01/Accounts/{self.twilio_sid}/Messages.json"
-                target_phone = recipient_phone if recipient_phone.startswith("whatsapp:") else f"whatsapp:{recipient_phone}"
-                resp = requests.post(
-                    endpoint,
-                    auth=(self.twilio_sid, self.twilio_token),
-                    data={"From": self.from_number, "To": target_phone, "Body": payload_text},
-                    timeout=10,
-                )
-                if resp.status_code in (200, 201):
-                    logger.info("WhatsApp alert sent via Twilio to %s", recipient_phone)
-                    return True
-                logger.warning("Twilio API response: %s %s", resp.status_code, resp.text)
-            except Exception as exc:
-                logger.error("Error sending Twilio WhatsApp message: %s", exc)
-
-        # 3. Meta Cloud API Dispatch
+        # 1. Meta WhatsApp Cloud API (Free Tier: 1,000 free conversations/month)
         if self.api_token and self.phone_number_id:
             try:
                 endpoint = f"https://graph.facebook.com/v18.0/{self.phone_number_id}/messages"
@@ -121,14 +106,67 @@ class WhatsAppAlertDispatcher:
                 }
                 resp = requests.post(endpoint, headers=headers, json=data, timeout=10)
                 if resp.status_code in (200, 201):
-                    logger.info("WhatsApp alert sent via Meta API to %s", recipient_phone)
+                    logger.info("WhatsApp alert sent via Meta Free Cloud API to %s", recipient_phone)
                     return True
+                logger.warning("Meta WhatsApp Cloud API error: %s %s", resp.status_code, resp.text)
             except Exception as exc:
                 logger.error("Error sending Meta WhatsApp message: %s", exc)
 
-        # 4. Fallback simulation (Safe dry-run when credentials not yet set)
+        # 2. Telegram Bot API (100% Free Forever, instant phone alerts)
+        if self.telegram_bot_token and self.telegram_chat_id:
+            try:
+                tg_endpoint = f"https://api.telegram.org/bot{self.telegram_bot_token}/sendMessage"
+                resp = requests.post(
+                    tg_endpoint,
+                    json={
+                        "chat_id": self.telegram_chat_id,
+                        "text": payload_text,
+                        "parse_mode": "Markdown",
+                    },
+                    timeout=10,
+                )
+                if resp.status_code in (200, 201):
+                    logger.info("Alert dispatched via free Telegram Bot to chat %s", self.telegram_chat_id)
+                    return True
+            except Exception as exc:
+                logger.error("Error dispatching free Telegram alert: %s", exc)
+
+        # 3. Free Webhook (e.g. Google Chat Space / Discord / Slack)
+        if self.webhook_url:
+            try:
+                resp = requests.post(
+                    self.webhook_url,
+                    json={"text": payload_text, "message": payload_text},
+                    timeout=10,
+                )
+                if resp.status_code in (200, 201, 204):
+                    logger.info("Alert sent via Free Webhook to %s", self.webhook_url)
+                    return True
+            except Exception as exc:
+                logger.error("Error sending alert webhook: %s", exc)
+
+        # 4. ntfy.sh (100% Free Open-Source Push Notifications to Phone)
+        if self.ntfy_topic and os.getenv("ENABLE_NTFY_PUSH", "false").lower() == "true":
+            try:
+                resp = requests.post(
+                    f"https://ntfy.sh/{self.ntfy_topic}",
+                    data=payload_text.encode("utf-8"),
+                    headers={
+                        "Title": "Data Pipeline Immune System Pulse",
+                        "Priority": "default",
+                        "Tags": "shield,robot",
+                    },
+                    timeout=10,
+                )
+                if resp.status_code == 200:
+                    logger.info("Free push alert sent via ntfy.sh topic '%s'", self.ntfy_topic)
+                    return True
+            except Exception as exc:
+                logger.error("Error sending free ntfy.sh alert: %s", exc)
+
+        # 5. Fallback simulation (Safe dry-run when credentials not yet configured)
         logger.info(
-            "[WhatsAppDispatcher DRY-RUN] Dispatching simulated alert to: %s\n%s",
+            "[MobileAlert DRY-RUN] Free notification generated for: %s\n%s",
             recipient_phone,
             payload_text,
         )
