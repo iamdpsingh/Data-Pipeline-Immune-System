@@ -1,0 +1,39 @@
+{
+  "table": "dpis_silver_dev.shipments",
+  "cluster_by": [
+    "carrier",
+    "status"
+  ],
+  "columns": [
+    {
+      "name": "tracking_number",
+      "type": "STRING",
+      "mode": "REQUIRED"
+    },
+    {
+      "name": "order_id",
+      "type": "STRING",
+      "mode": "REQUIRED"
+    },
+    {
+      "name": "carrier",
+      "type": "STRING",
+      "mode": "REQUIRED"
+    },
+    {
+      "name": "status",
+      "type": "STRING",
+      "mode": "REQUIRED"
+    },
+    {
+      "name": "transit_duration_hours",
+      "type": "FLOAT64",
+      "mode": "NULLABLE"
+    },
+    {
+      "name": "updated_at",
+      "type": "TIMESTAMP",
+      "mode": "REQUIRED"
+    }
+  ]
+}
