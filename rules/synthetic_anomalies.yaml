@@ -1,0 +1,13 @@
+# Chaos Anomaly Injection Profiles
+profiles:
+  spike_nulls:
+    pipeline: orders
+    target_column: customer_id
+    null_percentage: 45.0
+  sudden_volume_drop:
+    pipeline: payments
+    row_count_drop_pct: 75.0
+  unmasked_pii:
+    pipeline: customers
+    injected_column: credit_card_number
+    sample_pattern: "4532-xxxx-xxxx-1234"
