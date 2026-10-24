@@ -1,0 +1,7 @@
+# Lakehouse Compute & Storage Cost Governance
+cost_limits:
+  daily_bigquery_scanned_bytes_limit: 1099511627776  # 1 TB
+  max_dataproc_cluster_run_hours: 4
+  cloud_run_min_instances_dev: 0
+  cloud_run_max_instances_dev: 3
+  cloud_run_min_instances_prod: 1
