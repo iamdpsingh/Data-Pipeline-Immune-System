@@ -1,0 +1,31 @@
+{
+  "table": "dpis_gold_dev.customer_growth_daily",
+  "partition_by": "summary_date",
+  "columns": [
+    {
+      "name": "summary_date",
+      "type": "DATE",
+      "mode": "REQUIRED"
+    },
+    {
+      "name": "country",
+      "type": "STRING",
+      "mode": "REQUIRED"
+    },
+    {
+      "name": "new_customers",
+      "type": "INT64",
+      "mode": "REQUIRED"
+    },
+    {
+      "name": "active_customers",
+      "type": "INT64",
+      "mode": "REQUIRED"
+    },
+    {
+      "name": "churn_count",
+      "type": "INT64",
+      "mode": "REQUIRED"
+    }
+  ]
+}
