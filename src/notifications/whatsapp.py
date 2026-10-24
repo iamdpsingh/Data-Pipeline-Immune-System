@@ -50,6 +50,7 @@ class WhatsAppAlertDispatcher:
         now_utc = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:00 UTC")
         status_emoji = "🟢" if health_status == "HEALTHY" else "🟡" if health_status == "WARNING" else "🔴"
 
+        console_url = os.getenv("CLOUD_RUN_URL", "https://dpis-api.internal")
         return (
             f"🛡️ *Data Pipeline Immune System*\n"
             f"⏰ *Hourly Pulse* [{now_utc}]\n"
@@ -61,7 +62,7 @@ class WhatsAppAlertDispatcher:
             f"⚠️ *Quarantined (1h)*: {quarantined_last_hour} rows\n"
             f"━━━━━━━━━━━━━━━━━━━━━━\n"
             f"🔗 *Live Console*:\n"
-            f"https://dpis-dev-api-78310118782.us-central1.run.app\n"
+            f"{console_url}\n"
             f"_Autonomous Self-Healing Active_"
         )
 
