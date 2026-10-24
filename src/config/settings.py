@@ -16,6 +16,12 @@ from typing import Any, Dict, Optional
 
 import yaml
 
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except ImportError:
+    pass
+
 
 @dataclass(frozen=True)
 class ProjectConfig:

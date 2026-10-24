@@ -20,6 +20,12 @@ from datetime import datetime, timezone
 from typing import Any, Dict, Optional
 import requests
 
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except ImportError:
+    pass
+
 logger = logging.getLogger("dpis.notifications.mobile_pulse")
 
 
