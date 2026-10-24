@@ -106,54 +106,7 @@ class WhatsAppAlertDispatcher:
         """Sends hourly notification to the specified recipient via free channels."""
         payload_text = message or self.format_hourly_alert(**kwargs)
 
-        # If recipient is a test number, safely simulate delivery
-        clean_recipient = (
-            recipient_phone.replace("+", "").replace("whatsapp:", "").strip()
-        )
-        if clean_recipient in (
-            "1234567890",
-            "0000000000",
-            "",
-        ) or clean_recipient.startswith("1234567"):
-            logger.info(
-                "[WhatsAppAlertDispatcher DRY-RUN] Test phone number '%s' detected. Simulating dispatch.",
-                recipient_phone,
-            )
-            return True
-
-        # 1. Meta WhatsApp Cloud API (Free Tier: 1,000 free conversations/month)
-        if self.api_token and self.phone_number_id:
-            try:
-                endpoint = (
-                    f"https://graph.facebook.com/v18.0/{self.phone_number_id}/messages"
-                )
-                headers = {
-                    "Authorization": f"Bearer {self.api_token}",
-                    "Content-Type": "application/json",
-                }
-                clean_phone = (
-                    recipient_phone.replace("+", "").replace("whatsapp:", "").strip()
-                )
-                data = {
-                    "messaging_product": "whatsapp",
-                    "to": clean_phone,
-                    "type": "text",
-                    "text": {"body": payload_text},
-                }
-                resp = requests.post(endpoint, headers=headers, json=data, timeout=10)
-                if resp.status_code in (200, 201):
-                    logger.info(
-                        "WhatsApp alert sent via Meta Free Cloud API to %s",
-                        recipient_phone,
-                    )
-                    return True
-                logger.warning(
-                    "Meta WhatsApp Cloud API error: %s %s", resp.status_code, resp.text
-                )
-            except Exception as exc:
-                logger.error("Error sending Meta WhatsApp message: %s", exc)
-
-        # 2. Telegram Bot API (100% Free Forever, instant phone alerts)
+        # 1. Telegram Bot API (100% Free Forever, instant phone alerts via bot)
         if self.telegram_bot_token and self.telegram_chat_id:
             try:
                 tg_endpoint = (
@@ -174,8 +127,47 @@ class WhatsAppAlertDispatcher:
                         self.telegram_chat_id,
                     )
                     return True
+                logger.warning(
+                    "Telegram Bot API returned %s: %s", resp.status_code, resp.text
+                )
             except Exception as exc:
                 logger.error("Error dispatching free Telegram alert: %s", exc)
+
+        # 2. Meta WhatsApp Cloud API (Free Tier: 1,000 free conversations/month)
+        clean_phone = recipient_phone.replace("+", "").replace("whatsapp:", "").strip()
+        is_dummy_phone = clean_phone in (
+            "1234567890",
+            "0000000000",
+            "",
+        ) or clean_phone.startswith("1234567")
+
+        if not is_dummy_phone and self.api_token and self.phone_number_id:
+            try:
+                endpoint = (
+                    f"https://graph.facebook.com/v18.0/{self.phone_number_id}/messages"
+                )
+                headers = {
+                    "Authorization": f"Bearer {self.api_token}",
+                    "Content-Type": "application/json",
+                }
+                data = {
+                    "messaging_product": "whatsapp",
+                    "to": clean_phone,
+                    "type": "text",
+                    "text": {"body": payload_text},
+                }
+                resp = requests.post(endpoint, headers=headers, json=data, timeout=10)
+                if resp.status_code in (200, 201):
+                    logger.info(
+                        "WhatsApp alert sent via Meta Free Cloud API to %s",
+                        recipient_phone,
+                    )
+                    return True
+                logger.warning(
+                    "Meta WhatsApp Cloud API error: %s %s", resp.status_code, resp.text
+                )
+            except Exception as exc:
+                logger.error("Error sending Meta WhatsApp message: %s", exc)
 
         # 3. Free Webhook (e.g. Google Chat Space / Discord / Slack)
         if self.webhook_url:
