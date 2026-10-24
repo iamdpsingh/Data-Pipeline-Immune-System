@@ -1,0 +1,12 @@
+# Dead-Letter Quarantine Routing Matrix
+policies:
+  corrupted_records:
+    destination_gcs: "gs://dpis-quarantine-data-pipeline-immune-system/records/{pipeline}/{date}/"
+    destination_bq: "dpis_dev.quarantine_records"
+    retention_days: 90
+    auto_replay_allowed: true
+  schema_violation_partitions:
+    destination_gcs: "gs://dpis-quarantine-data-pipeline-immune-system/partitions/{pipeline}/{date}/"
+    destination_bq: "dpis_dev.quarantine_partitions"
+    retention_days: 180
+    auto_replay_allowed: false
