@@ -352,7 +352,7 @@ function triggerDailyEmail() {
 }
 
 function triggerWhatsAppAlert() {
-  appendTerminalLog(`[WHATSAPP PULSE] Triggering hourly WhatsApp status pulse via Twilio / Meta API...`);
+  appendTerminalLog(`[WHATSAPP PULSE] Triggering hourly status pulse via Meta Cloud API / Telegram Bot...`);
   setTimeout(() => {
     appendTerminalLog(`[WHATSAPP PULSE SUCCESS] Operational status (98.5/100 HEALTHY) delivered to mobile.`);
   }, 800);
