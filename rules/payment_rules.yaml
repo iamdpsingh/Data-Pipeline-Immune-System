@@ -1,0 +1,14 @@
+# Payment Stream Quality & Security Rules
+rules:
+  - id: PR_NEGATIVE_AMOUNT
+    field: amount
+    condition: "<= 0.00"
+    severity: P1
+    action: QUARANTINE_RECORD
+    description: "Payment amount must be strictly greater than zero."
+  - id: PR_UNSUPPORTED_CURRENCY
+    field: currency
+    condition: "NOT_IN ['USD', 'EUR', 'GBP', 'INR', 'CAD']"
+    severity: P2
+    action: QUARANTINE_RECORD
+    description: "Flag transactions with unapproved settlement currencies."
