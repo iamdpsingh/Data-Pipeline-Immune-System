@@ -203,20 +203,32 @@ These are enforced in application code and policy configuration, not inside the 
 
 ---
 
-## Documentation index
+## Live Google Cloud Deployment
 
-- [System architecture](docs/architecture/system-architecture.md)
-- [Agent architecture](docs/architecture/agent-architecture.md)
-- [Data flow](docs/architecture/data-flow.md)
-- [Failure recovery](docs/architecture/failure-recovery.md)
-- [Decision log](docs/decisions/decision.md)
-- [System flow](docs/flow.md)
-- [Operational runbook](docs/operations/runbook.md)
-- [Incident response](docs/operations/incident-response.md)
-- [Troubleshooting guide](docs/operations/troubleshooting.md)
-- [Security model](docs/security/security-model.md)
-- [ADR index](docs/decisions/)
-- [Deployment guide](docs/operations/runbook.md#deployment)
+The entire system is deployed on **Google Cloud Platform** under project [`data-pipeline-immune-system`](https://console.cloud.google.com/welcome/new?project=data-pipeline-immune-system):
+- **Autonomous Controller API**: [`https://dpis-dev-api-78310118782.us-central1.run.app`](https://dpis-dev-api-78310118782.us-central1.run.app)
+- **Interactive Swagger / OpenAPI Docs**: [`https://dpis-dev-api-78310118782.us-central1.run.app/docs`](https://dpis-dev-api-78310118782.us-central1.run.app/docs)
+- **Container Registry**: `us-central1-docker.pkg.dev/data-pipeline-immune-system/dpis-repo/immune-system:latest`
+- **Lakehouse GCS Buckets**: `gs://dpis-source-data-pipeline-immune-system`, `gs://dpis-quarantine-data-pipeline-immune-system`
+- **Warehouse & Telemetry**: BigQuery datasets `dpis_dev`, `dpis_bronze_dev`, `dpis_silver_dev`, `dpis_gold_dev`, `dpis_audit`
+
+---
+
+## Documentation Index
+
+- **[Junior & Intern Developer Onboarding Guide](docs/onboarding/intern-developer-guide.md)** — Comprehensive plain-English walkthrough of GCP services, architecture, algorithms, and tutorials
+- [System Architecture](docs/architecture/system-architecture.md)
+- [Agent Architecture](docs/architecture/agent-architecture.md)
+- [Data Flow & Medallion Design](docs/architecture/data-flow.md)
+- [Failure Recovery & Idempotency](docs/architecture/failure-recovery.md)
+- [Architecture Decision Log (ADRs)](docs/decisions/decision.md)
+- [System Execution Flow](docs/flow.md)
+- [Operational Runbook](docs/operations/runbook.md)
+- [Incident Response Runbook](docs/operations/incident-response.md)
+- [Troubleshooting Playbooks](docs/operations/troubleshooting.md)
+- [Security Model & Threat Defense](docs/security/security-model.md)
+- [Development Guidelines](.agents/rules/development-guidelines.md)
+- [Contributing Standards](CONTRIBUTING.md)
 
 ---
 
