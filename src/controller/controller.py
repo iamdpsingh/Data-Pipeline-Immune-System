@@ -57,7 +57,16 @@ class ImmuneSystemController:
         learning_agent: Optional[LearningAgent] = None,
     ):
         self.settings = settings or load_settings()
-        self.audit = audit_logger or AuditLogger(dataset=self.settings.project.dataset)
+        bq_client = None
+        try:
+            from google.cloud import bigquery
+            bq_client = bigquery.Client(project=self.settings.project.id)
+        except Exception:
+            bq_client = None
+        self.audit = audit_logger or AuditLogger(
+            dataset=self.settings.project.dataset,
+            bq_client=bq_client,
+        )
         self.detection = detection_agent or DetectionAgent(self.settings)
         self.diagnosis = diagnosis_agent or DiagnosisAgent(self.settings)
         self.risk = risk_agent or RiskAgent(self.settings)
