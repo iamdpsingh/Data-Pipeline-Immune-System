@@ -1,0 +1,14 @@
+# Customer Stream Anomaly & Integrity Rules
+rules:
+  - id: CR_NULL_EMAIL
+    field: email
+    condition: "IS_NULL"
+    severity: P2
+    action: QUARANTINE_RECORD
+    description: "Reject customer registration if email is null."
+  - id: CR_INVALID_COUNTRY
+    field: country
+    condition: "LENGTH > 3 OR LENGTH < 2"
+    severity: P2
+    action: QUARANTINE_RECORD
+    description: "Country code must be ISO alpha-2 or alpha-3."
