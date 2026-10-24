@@ -22,9 +22,9 @@ provider "google" {
 }
 
 locals {
-  source_bucket     = var.source_bucket_name != "" ? var.source_bucket_name : "dpis-${var.environment}-source"
-  bronze_bucket     = var.bronze_bucket_name != "" ? var.bronze_bucket_name : "dpis-${var.environment}-bronze"
-  quarantine_bucket = var.quarantine_bucket_name != "" ? var.quarantine_bucket_name : "dpis-${var.environment}-quarantine"
+  source_bucket     = var.source_bucket_name != "" ? var.source_bucket_name : "dpis-source-${var.project_id}"
+  bronze_bucket     = var.bronze_bucket_name != "" ? var.bronze_bucket_name : "dpis-bronze-${var.project_id}"
+  quarantine_bucket = var.quarantine_bucket_name != "" ? var.quarantine_bucket_name : "dpis-quarantine-${var.project_id}"
   
   control_dataset   = "dpis_${var.environment}"
   bronze_dataset    = "dpis_bronze_${var.environment}"
@@ -52,6 +52,17 @@ resource "google_project_service" "apis" {
   service                    = each.key
   disable_on_destroy         = false
   disable_dependent_services = false
+}
+
+# ------------------------------------------------------------------------------
+# 1b. Artifact Registry Repository
+# ------------------------------------------------------------------------------
+resource "google_artifact_registry_repository" "dpis_repo" {
+  location      = var.region
+  repository_id = "dpis-repo"
+  description   = "Data Pipeline Immune System Docker repository"
+  format        = "DOCKER"
+  depends_on    = [google_project_service.apis]
 }
 
 # ------------------------------------------------------------------------------
@@ -214,7 +225,7 @@ resource "google_secret_manager_secret_version" "slack_webhook_v1" {
 resource "google_cloud_run_v2_service" "immune_api" {
   name     = "dpis-${var.environment}-api"
   location = var.region
-  ingress  = "INGRESS_TRAFFIC_INTERNAL_LOAD_BALANCER"
+  ingress  = "INGRESS_TRAFFIC_ALL"
 
   template {
     service_account = google_service_account.immune_agent_sa.email

@@ -64,7 +64,7 @@ variable "cloud_run_max_instances" {
 variable "cloud_run_image" {
   description = "Container image URI for the Immune System service."
   type        = string
-  default     = "gcr.io/dpis-dev/immune-system:latest"
+  default     = "us-central1-docker.pkg.dev/data-pipeline-immune-system/dpis-repo/immune-system:latest"
 }
 
 variable "alerts_slack_webhook" {
