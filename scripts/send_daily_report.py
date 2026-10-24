@@ -16,7 +16,9 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")
 
 from src.notifications.reporter import DailyReportGenerator, EmailDispatcher
 
-logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
+logging.basicConfig(
+    level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s"
+)
 logger = logging.getLogger("dpis.scripts.daily_report")
 
 
@@ -24,7 +26,9 @@ def main() -> None:
     parser = argparse.ArgumentParser(description="Trigger daily email summary report.")
     parser.add_argument(
         "--recipient",
-        default=os.getenv("REPORT_RECIPIENT", "dhruvpratapsingh30.official2.o@gmail.com"),
+        default=os.getenv(
+            "REPORT_RECIPIENT", "dhruvpratapsingh30.official2.o@gmail.com"
+        ),
         help="Target email address for the daily health report.",
     )
     parser.add_argument(
@@ -34,7 +38,11 @@ def main() -> None:
     )
     args = parser.parse_args()
 
-    logger.info("Starting daily report generation for env=%s recipient=%s", args.environment, args.recipient)
+    logger.info(
+        "Starting daily report generation for env=%s recipient=%s",
+        args.environment,
+        args.recipient,
+    )
 
     generator = DailyReportGenerator(environment=args.environment)
     metrics = generator.collect_metrics(

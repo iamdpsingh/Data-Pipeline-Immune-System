@@ -29,7 +29,7 @@ def _check_injection_allowed() -> None:
     if env == "production":
         override = os.getenv("DPIS_ALLOW_INJECTION_IN_PRODUCTION")
         if override != "I_UNDERSTAND_THE_RISK":
-            raise EnvironmentError("Failure injection is disabled in production.")
+            raise OSError("Failure injection is disabled in production.")
 
 
 def simulate_api_failure(error_type: str = "504_GATEWAY_TIMEOUT") -> dict:

@@ -13,9 +13,8 @@ in the pipeline.
 """
 
 from datetime import datetime, timedelta
+
 from airflow import DAG
-from airflow.operators.python import PythonOperator
-from airflow.sensors.base import BaseSensorOperator
 
 # DAG is a stub — implementation in Phase 5
 default_args = {

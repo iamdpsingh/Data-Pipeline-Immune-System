@@ -43,12 +43,12 @@ jobs:
 
       - name: Run unit tests
         run: pytest tests/unit/ tests/agents/ -v --tb=short
+        env:
+          PYTHONPATH: .
 
   safety-critical-tests:
     name: Safety-critical tests
     runs-on: ubuntu-latest
-    # These run as a separate job so failures are immediately visible.
-    # A failure here means the core safety guarantees are broken.
     steps:
       - uses: actions/checkout@v4
 
@@ -62,7 +62,8 @@ jobs:
 
       - name: Run safety-critical tests
         run: pytest tests/ -m safety_critical -v --tb=long
-        # tb=long because when safety tests fail, we want the full context
+        env:
+          PYTHONPATH: .
 
   data-quality-tests:
     name: Data quality tests
@@ -80,3 +81,5 @@ jobs:
 
       - name: Run data quality tests
         run: pytest tests/data_quality/ -v --tb=short
+        env:
+          PYTHONPATH: .

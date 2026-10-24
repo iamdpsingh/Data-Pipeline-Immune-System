@@ -10,10 +10,9 @@ evidence, and recommended_action.
 
 from __future__ import annotations
 
-import json
 import logging
 from dataclasses import dataclass
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -22,7 +21,7 @@ logger = logging.getLogger(__name__)
 class LLMDiagnosisPayload:
     root_cause: str
     confidence: float
-    evidence: List[str]
+    evidence: list[str]
     recommended_action: str
 
 
@@ -34,7 +33,7 @@ class LLMClient:
         model_name: str = "gemini-1.5-flash",
         temperature: float = 0.1,
         max_tokens: int = 2048,
-        api_key: Optional[str] = None,
+        api_key: str | None = None,
     ):
         self.model_name = model_name
         self.temperature = temperature
@@ -45,21 +44,31 @@ class LLMClient:
         self,
         pipeline_id: str,
         anomaly_type: str,
-        evidence: List[str],
-        similar_incidents: Optional[List[Dict[str, Any]]] = None,
+        evidence: list[str],
+        similar_incidents: list[dict[str, Any]] | None = None,
     ) -> LLMDiagnosisPayload:
         """Synthesizes symptoms into a root cause diagnosis."""
-        logger.info("Invoking LLM (%s) for pipeline '%s' anomaly '%s'", self.model_name, pipeline_id, anomaly_type)
+        logger.info(
+            "Invoking LLM (%s) for pipeline '%s' anomaly '%s'",
+            self.model_name,
+            pipeline_id,
+            anomaly_type,
+        )
 
         # In production or when API key is provided, this calls google-generativeai.
         # Fallback heuristic reasoning engine for offline/test environments:
         evidence_str = " ".join(evidence).lower()
 
-        if "drop" in evidence_str or "fewer" in evidence_str or "z-score" in evidence_str:
+        if (
+            "drop" in evidence_str
+            or "fewer" in evidence_str
+            or "z-score" in evidence_str
+        ):
             return LLMDiagnosisPayload(
                 root_cause="UPSTREAM_PARTIAL_LOAD",
                 confidence=0.88,
-                evidence=evidence + ["Statistical deviation indicates truncated upstream batch."],
+                evidence=evidence
+                + ["Statistical deviation indicates truncated upstream batch."],
                 recommended_action="RETRY_SOURCE_EXTRACTION",
             )
         elif "null" in evidence_str or "completeness" in evidence_str:

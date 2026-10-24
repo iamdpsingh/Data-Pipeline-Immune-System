@@ -17,6 +17,13 @@ include = ["src*", "agents*"]
 [tool.ruff]
 target-version = "py311"
 line-length = 88
+exclude = [
+    ".venv",
+    "__pycache__",
+    "*.egg-info",
+]
+
+[tool.ruff.lint]
 select = [
     "E",   # pycodestyle errors
     "W",   # pycodestyle warnings
@@ -28,11 +35,7 @@ select = [
 ]
 ignore = [
     "E501",  # line too long — black handles this
-]
-exclude = [
-    ".venv",
-    "__pycache__",
-    "*.egg-info",
+    "UP042", # str, Enum inheritance
 ]
 
 [tool.black]
@@ -41,6 +44,7 @@ target-version = ["py311"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+pythonpath = ["."]
 python_files = ["test_*.py"]
 python_functions = ["test_*"]
 markers = [

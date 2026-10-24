@@ -12,7 +12,6 @@ from __future__ import annotations
 
 import math
 from dataclasses import dataclass
-from typing import List, Optional, Tuple
 
 
 @dataclass(frozen=True)
@@ -32,7 +31,7 @@ class StatisticalDetector:
         self.zscore_threshold = zscore_threshold
 
     @staticmethod
-    def compute_summary(values: List[float]) -> Optional[StatisticalSummary]:
+    def compute_summary(values: list[float]) -> StatisticalSummary | None:
         """Calculates basic parametric and non-parametric summary metrics."""
         if not values:
             return None
@@ -67,7 +66,7 @@ class StatisticalDetector:
 
     def is_zscore_anomaly(
         self, value: float, mean: float, std_dev: float
-    ) -> Tuple[bool, float]:
+    ) -> tuple[bool, float]:
         """Checks if a metric point exceeds the z-score threshold.
 
         Returns:

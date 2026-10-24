@@ -12,7 +12,7 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass
-from typing import Any, Dict, List
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -37,10 +37,10 @@ class VerificationEngine:
         pipeline_id: str,
         table_name: str,
         remediation_action: str,
-        post_metrics: Dict[str, Any],
-    ) -> List[CheckResult]:
+        post_metrics: dict[str, Any],
+    ) -> list[CheckResult]:
         """Runs targeted post-repair verification checks."""
-        results: List[CheckResult] = []
+        results: list[CheckResult] = []
 
         # 1. Row volume check
         rows = post_metrics.get("rows_written", 0)

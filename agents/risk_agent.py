@@ -17,9 +17,8 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from enum import Enum
-from typing import Optional
 
 from agents.diagnosis_agent import DiagnosisResult
 from src.config.settings import Settings, load_settings
@@ -50,8 +49,8 @@ class RiskAssessment:
     auto_remediable: bool
     requires_human_approval: bool
     blocked: bool
-    block_reason: Optional[str]
-    approved_action: Optional[str]
+    block_reason: str | None
+    approved_action: str | None
     assessed_at: str
 
 
@@ -60,15 +59,15 @@ class RiskAgent:
 
     def __init__(
         self,
-        settings: Optional[Settings] = None,
-        safety_rules: Optional[SafetyRulesLoader] = None,
+        settings: Settings | None = None,
+        safety_rules: SafetyRulesLoader | None = None,
     ):
         self.settings = settings or load_settings()
         self.safety_rules = safety_rules or SafetyRulesLoader()
 
     def assess(self, input_data: RiskInput) -> RiskAssessment:
         """Evaluates remediation action risk and produces safety authorization."""
-        now_str = datetime.now(timezone.utc).isoformat()
+        now_str = datetime.now(UTC).isoformat()
         diag = input_data.diagnosis_result
         action = diag.recommended_action
 
@@ -86,10 +85,12 @@ class RiskAgent:
             or action == "BLOCK_PIPELINE"
             or diag.root_cause == "PII_EXPOSURE_RISK"
         ):
-            reason = (
-                f"Prohibited action/cause '{action or diag.root_cause}' violates never-allow safety policy."
+            reason = f"Prohibited action/cause '{action or diag.root_cause}' violates never-allow safety policy."
+            logger.critical(
+                "NEVER-ALLOW / HARD BLOCK: %s for incident %s",
+                action,
+                input_data.incident_id,
             )
-            logger.critical("NEVER-ALLOW / HARD BLOCK: %s for incident %s", action, input_data.incident_id)
             return RiskAssessment(
                 incident_id=input_data.incident_id,
                 risk_level=RiskLevel.NEVER_ALLOW,
@@ -103,7 +104,9 @@ class RiskAgent:
 
         # 2. Breaking schema change explicitly mandates human authorization
         if diag.root_cause == "SCHEMA_BREAKING_CHANGE":
-            logger.warning("Root cause SCHEMA_BREAKING_CHANGE requires explicit human approval.")
+            logger.warning(
+                "Root cause SCHEMA_BREAKING_CHANGE requires explicit human approval."
+            )
             return RiskAssessment(
                 incident_id=input_data.incident_id,
                 risk_level=RiskLevel.HIGH,
@@ -120,7 +123,9 @@ class RiskAgent:
 
         # 4. High Risk actions always require human authorization
         if policy.risk_tier == "HIGH":
-            logger.warning("Action '%s' is HIGH risk. Requiring human approval.", action)
+            logger.warning(
+                "Action '%s' is HIGH risk. Requiring human approval.", action
+            )
             return RiskAssessment(
                 incident_id=input_data.incident_id,
                 risk_level=RiskLevel.HIGH,

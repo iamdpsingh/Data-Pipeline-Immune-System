@@ -16,12 +16,16 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")
 
 from src.notifications.whatsapp import WhatsAppAlertDispatcher
 
-logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
+logging.basicConfig(
+    level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s"
+)
 logger = logging.getLogger("dpis.scripts.whatsapp")
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Trigger hourly WhatsApp pipeline pulse.")
+    parser = argparse.ArgumentParser(
+        description="Trigger hourly WhatsApp pipeline pulse."
+    )
     parser.add_argument(
         "--phone",
         default=os.getenv("WHATSAPP_RECIPIENT", "+1234567890"),
@@ -41,7 +45,9 @@ def main() -> None:
     )
     args = parser.parse_args()
 
-    logger.info("Triggering hourly WhatsApp update to %s (Status=%s)", args.phone, args.status)
+    logger.info(
+        "Triggering hourly WhatsApp update to %s (Status=%s)", args.phone, args.status
+    )
 
     dispatcher = WhatsAppAlertDispatcher()
     success = dispatcher.send_hourly_alert(

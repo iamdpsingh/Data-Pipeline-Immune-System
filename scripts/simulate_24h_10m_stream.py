@@ -30,18 +30,19 @@ import os
 import random
 import sys
 import time
-from datetime import datetime, timezone
-from typing import Any, Dict, Generator, List
+from collections.abc import Generator
+from datetime import UTC, datetime
+from typing import Any
 
 # Ensure repository root is in python path
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 from src.controller.controller import ImmuneSystemController
-from src.notifications.reporter import DailyReportGenerator, DailyReportMetrics, EmailDispatcher
 from src.observability.health_score import HealthScoreCalculator, PipelineFactors
-from src.validation.quality_engine import DataQualityValidator
 
-logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] [DPIS-10M] %(message)s")
+logging.basicConfig(
+    level=logging.INFO, format="%(asctime)s [%(levelname)s] [DPIS-10M] %(message)s"
+)
 logger = logging.getLogger("dpis.load_stream_10m")
 
 CURRENCIES = ["USD", "EUR", "GBP", "JPY", "CAD"]
@@ -52,9 +53,9 @@ STATUSES = ["COMPLETED", "SETTLED", "PROCESSING"]
 def generate_streaming_batch(
     batch_size: int,
     anomaly_rate: float = 0.0005,  # 0.05% corrupted records (e.g., negative amounts or null IDs)
-) -> Generator[Dict[str, Any], None, None]:
+) -> Generator[dict[str, Any], None, None]:
     """Generates streaming records one-by-one to avoid high memory footprint."""
-    now_iso = datetime.now(timezone.utc).isoformat()
+    now_iso = datetime.now(UTC).isoformat()
     for _ in range(batch_size):
         is_corrupt = random.random() < anomaly_rate
         if is_corrupt:
@@ -98,10 +99,16 @@ class Enterprise10MLoadSimulator:
         self.total_clean = 0
         self.start_time = time.time()
 
-    def process_micro_batch(self, batch_id: int, records: List[Dict[str, Any]]) -> Dict[str, Any]:
+    def process_micro_batch(
+        self, batch_id: int, records: list[dict[str, Any]]
+    ) -> dict[str, Any]:
         """Processes a single micro-batch through quality gates and dead-letter quarantine."""
-        corrupted = [r for r in records if r["customer_id"] is None or r["amount"] <= 0.0]
-        clean = [r for r in records if r["customer_id"] is not None and r["amount"] > 0.0]
+        corrupted = [
+            r for r in records if r["customer_id"] is None or r["amount"] <= 0.0
+        ]
+        clean = [
+            r for r in records if r["customer_id"] is not None and r["amount"] > 0.0
+        ]
 
         q_count = len(corrupted)
         c_count = len(clean)
@@ -120,7 +127,9 @@ class Enterprise10MLoadSimulator:
     def run_benchmark(self, max_records: int = 50_000) -> None:
         """Runs a fast-forward benchmark to test memory efficiency and throughput."""
         print("\n" + "=" * 78)
-        print(f"  DPIS HIGH-THROUGHPUT LOAD BENCHMARK (TARGET: {max_records:,} RECORDS)")
+        print(
+            f"  DPIS HIGH-THROUGHPUT LOAD BENCHMARK (TARGET: {max_records:,} RECORDS)"
+        )
         print("=" * 78)
 
         batches = max_records // self.batch_size
@@ -128,7 +137,9 @@ class Enterprise10MLoadSimulator:
             batches = 1
 
         for b in range(1, batches + 1):
-            batch_data = list(generate_streaming_batch(self.batch_size, anomaly_rate=0.001))
+            batch_data = list(
+                generate_streaming_batch(self.batch_size, anomaly_rate=0.001)
+            )
             res = self.process_micro_batch(b, batch_data)
             elapsed = time.time() - self.start_time
             throughput = self.total_processed / elapsed if elapsed > 0 else 0
@@ -151,15 +162,19 @@ class Enterprise10MLoadSimulator:
         print("\n" + "=" * 78)
         print("  STARTING 24-HOUR REAL-TIME ENTERPRISE STREAMING SIMULATION")
         print(f"  Target Daily Volume: {self.target_daily_volume:,} records")
-        print(f"  Target Rate: {rate_per_sec:.1f} records/sec | Interval: {interval:.2f}s per {chunk_size} batch")
+        print(
+            f"  Target Rate: {rate_per_sec:.1f} records/sec | Interval: {interval:.2f}s per {chunk_size} batch"
+        )
         print("=" * 78 + "\n")
 
         batch_id = 0
         try:
             while self.total_processed < self.target_daily_volume:
                 batch_id += 1
-                batch_data = list(generate_streaming_batch(chunk_size, anomaly_rate=0.0004))
-                res = self.process_micro_batch(batch_id, batch_data)
+                batch_data = list(
+                    generate_streaming_batch(chunk_size, anomaly_rate=0.0004)
+                )
+                self.process_micro_batch(batch_id, batch_data)
 
                 elapsed = time.time() - self.start_time
                 rps = self.total_processed / elapsed if elapsed > 0 else 0
@@ -173,34 +188,67 @@ class Enterprise10MLoadSimulator:
                 )
                 time.sleep(interval)
         except KeyboardInterrupt:
-            print("\n[DPIS-10M] Simulation interrupted by user. Finalizing telemetry...")
+            print(
+                "\n[DPIS-10M] Simulation interrupted by user. Finalizing telemetry..."
+            )
 
         self._print_summary()
 
     def _print_summary(self) -> None:
         elapsed = time.time() - self.start_time
         calc = HealthScoreCalculator()
-        factors = PipelineFactors(reliability=1.0, freshness=1.0, quality=0.999, schema_stability=1.0, sla_compliance=1.0)
+        factors = PipelineFactors(
+            reliability=1.0,
+            freshness=1.0,
+            quality=0.999,
+            schema_stability=1.0,
+            sla_compliance=1.0,
+        )
         health = calc.calculate("orders", factors)
 
         print("\n" + "=" * 78)
         print("  10M/DAY STREAMING SIMULATION TELEMETRY SUMMARY")
         print("=" * 78)
         print(f"  Total Ingested:           {self.total_processed:,} records")
-        print(f"  Conformed to Silver:      {self.total_clean:,} records (100% Validated)")
-        print(f"  Isolated to DLQ:          {self.total_quarantined:,} records (ADR-008 Safe Isolation)")
+        print(
+            f"  Conformed to Silver:      {self.total_clean:,} records (100% Validated)"
+        )
+        print(
+            f"  Isolated to DLQ:          {self.total_quarantined:,} records (ADR-008 Safe Isolation)"
+        )
         print(f"  Elapsed Wall Time:        {elapsed:.2f} seconds")
-        print(f"  Average Throughput:       {(self.total_processed / elapsed if elapsed > 0 else 0):,.0f} records/sec")
-        print(f"  Composite Health Score:   {health.composite_score:.1f}/100 [{health.status.value}]")
+        print(
+            f"  Average Throughput:       {(self.total_processed / elapsed if elapsed > 0 else 0):,.0f} records/sec"
+        )
+        print(
+            f"  Composite Health Score:   {health.composite_score:.1f}/100 [{health.status.value}]"
+        )
         print("=" * 78 + "\n")
 
 
 def main():
     parser = argparse.ArgumentParser(description="DPIS 10M/Day Load Simulation Engine")
-    parser.add_argument("--mode", choices=["benchmark", "realtime", "batch"], default="benchmark", help="Simulation mode")
-    parser.add_argument("--target-daily-volume", type=int, default=10_000_000, help="Target 24-hr record volume (e.g. 9500000-10500000)")
-    parser.add_argument("--batch-size", type=int, default=10_000, help="Micro-batch size for streaming")
-    parser.add_argument("--benchmark-records", type=int, default=50_000, help="Records to test in benchmark mode")
+    parser.add_argument(
+        "--mode",
+        choices=["benchmark", "realtime", "batch"],
+        default="benchmark",
+        help="Simulation mode",
+    )
+    parser.add_argument(
+        "--target-daily-volume",
+        type=int,
+        default=10_000_000,
+        help="Target 24-hr record volume (e.g. 9500000-10500000)",
+    )
+    parser.add_argument(
+        "--batch-size", type=int, default=10_000, help="Micro-batch size for streaming"
+    )
+    parser.add_argument(
+        "--benchmark-records",
+        type=int,
+        default=50_000,
+        help="Records to test in benchmark mode",
+    )
     args = parser.parse_args()
 
     simulator = Enterprise10MLoadSimulator(

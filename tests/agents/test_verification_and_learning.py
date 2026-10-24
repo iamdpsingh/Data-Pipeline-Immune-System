@@ -1,6 +1,5 @@
 """Unit tests for VerificationAgent and LearningAgent."""
 
-import pytest
 from agents.detection_agent import DetectionResult
 from agents.diagnosis_agent import DiagnosisResult
 from agents.learning_agent import IncidentRecord, LearningAgent
@@ -44,7 +43,9 @@ class TestVerificationAgent:
             "duplicate_threshold": 0.02,
         }
 
-        res = self.agent.verify("inc-ver-001", self.det, rem, post_repair_metrics=post_metrics)
+        res = self.agent.verify(
+            "inc-ver-001", self.det, rem, post_repair_metrics=post_metrics
+        )
         assert res.all_checks_passed is True
         assert len(res.check_results) == 3
         assert all(c.status == "PASS" for c in res.check_results)
@@ -69,9 +70,13 @@ class TestVerificationAgent:
             "duplicate_threshold": 0.02,
         }
 
-        res = self.agent.verify("inc-ver-001", self.det, rem, post_repair_metrics=post_metrics)
+        res = self.agent.verify(
+            "inc-ver-001", self.det, rem, post_repair_metrics=post_metrics
+        )
         assert res.all_checks_passed is False
-        assert any(c.status == "FAIL" and "null" in c.check_name for c in res.check_results)
+        assert any(
+            c.status == "FAIL" and "null" in c.check_name for c in res.check_results
+        )
 
     def test_verification_fails_if_remediation_failed(self):
         rem = RemediationResult(

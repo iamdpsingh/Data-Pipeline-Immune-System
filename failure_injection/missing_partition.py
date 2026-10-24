@@ -31,7 +31,7 @@ def _check_injection_allowed() -> None:
     if env == "production":
         override = os.getenv("DPIS_ALLOW_INJECTION_IN_PRODUCTION")
         if override != "I_UNDERSTAND_THE_RISK":
-            raise EnvironmentError("Failure injection is disabled in production.")
+            raise OSError("Failure injection is disabled in production.")
 
 
 def inject_missing_partition(partition_dir: str) -> None:
@@ -44,7 +44,10 @@ def inject_missing_partition(partition_dir: str) -> None:
         shutil.move(str(path), str(backup_path))
         logger.info("Simulated missing partition by moving %s -> %s", path, backup_path)
     else:
-        logger.info("Partition directory %s does not exist; ready to test missing partition detection.", path)
+        logger.info(
+            "Partition directory %s does not exist; ready to test missing partition detection.",
+            path,
+        )
 
 
 def main() -> None:

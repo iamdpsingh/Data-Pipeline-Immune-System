@@ -24,7 +24,6 @@ import logging
 import os
 import random
 from pathlib import Path
-from typing import Any, Dict
 
 logger = logging.getLogger(__name__)
 
@@ -34,21 +33,27 @@ def _check_injection_allowed() -> None:
     if env == "production":
         override = os.getenv("DPIS_ALLOW_INJECTION_IN_PRODUCTION")
         if override != "I_UNDERSTAND_THE_RISK":
-            raise EnvironmentError("Failure injection is disabled in production.")
+            raise OSError("Failure injection is disabled in production.")
 
 
-def inject_null_spike(source_file_path: str, column: str = "customer_id", null_percentage: float = 0.20) -> int:
+def inject_null_spike(
+    source_file_path: str, column: str = "customer_id", null_percentage: float = 0.20
+) -> int:
     """Injects null values into designated column across a target percentage of rows."""
     _check_injection_allowed()
     path = Path(source_file_path)
 
     if not path.exists():
         records = [
-            {"order_id": f"ORD-{i:04d}", "customer_id": f"CUST-{i:06d}", "total_amount": 50.0}
+            {
+                "order_id": f"ORD-{i:04d}",
+                "customer_id": f"CUST-{i:06d}",
+                "total_amount": 50.0,
+            }
             for i in range(100)
         ]
     else:
-        with open(path, "r", encoding="utf-8") as f:
+        with open(path, encoding="utf-8") as f:
             records = [json.loads(line) for line in f if line.strip()]
 
     null_count = int(len(records) * null_percentage)

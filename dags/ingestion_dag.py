@@ -9,7 +9,6 @@ Emits operational metrics to the immune control plane for real-time observabilit
 
 from __future__ import annotations
 
-import os
 from datetime import datetime, timedelta
 from typing import Any
 
@@ -31,13 +30,17 @@ def notify_pipeline_run_start(**context: Any) -> None:
     """Emits run start event to BigQuery pipeline_runs table."""
     run_id = context["run_id"]
     logical_date = context.get("logical_date") or context.get("execution_date")
-    print(f"[Immune Telemetry] Pipeline 'orders_ingestion' started: run_id={run_id}, date={logical_date}")
+    print(
+        f"[Immune Telemetry] Pipeline 'orders_ingestion' started: run_id={run_id}, date={logical_date}"
+    )
 
 
 def notify_pipeline_run_completion(**context: Any) -> None:
     """Emits run completion status to BigQuery pipeline_runs table."""
     run_id = context["run_id"]
-    print(f"[Immune Telemetry] Pipeline 'orders_ingestion' completed successfully: run_id={run_id}")
+    print(
+        f"[Immune Telemetry] Pipeline 'orders_ingestion' completed successfully: run_id={run_id}"
+    )
 
 
 with DAG(

@@ -12,9 +12,9 @@ from __future__ import annotations
 
 import logging
 import uuid
-from dataclasses import asdict, dataclass
-from datetime import datetime, timezone
-from typing import Any, Dict, List, Optional
+from dataclasses import dataclass
+from datetime import UTC, datetime
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -22,12 +22,12 @@ logger = logging.getLogger(__name__)
 @dataclass(frozen=True)
 class AuditEvent:
     event_id: str
-    incident_id: Optional[str]
+    incident_id: str | None
     pipeline_id: str
     run_id: str
     agent_name: str
     action_type: str
-    details: Dict[str, Any]
+    details: dict[str, Any]
     status: str
     timestamp: datetime
 
@@ -35,10 +35,10 @@ class AuditEvent:
 class AuditLogger:
     """Manages audit event serialization and persistent recording."""
 
-    def __init__(self, dataset: str = "dpis_dev", bq_client: Optional[Any] = None):
+    def __init__(self, dataset: str = "dpis_dev", bq_client: Any | None = None):
         self.dataset = dataset
         self.bq_client = bq_client
-        self._local_buffer: List[AuditEvent] = []
+        self._local_buffer: list[AuditEvent] = []
 
     def record_event(
         self,
@@ -46,8 +46,8 @@ class AuditLogger:
         run_id: str,
         agent_name: str,
         action_type: str,
-        details: Dict[str, Any],
-        incident_id: Optional[str] = None,
+        details: dict[str, Any],
+        incident_id: str | None = None,
         status: str = "SUCCESS",
     ) -> AuditEvent:
         """Records an audit event to the audit trail."""
@@ -60,7 +60,7 @@ class AuditLogger:
             action_type=action_type,
             details=details,
             status=status,
-            timestamp=datetime.now(timezone.utc),
+            timestamp=datetime.now(UTC),
         )
 
         self._local_buffer.append(event)
@@ -100,7 +100,7 @@ class AuditLogger:
         except Exception as exc:
             logger.warning("Could not persist audit event to BigQuery: %s", exc)
 
-    def get_events(self) -> List[AuditEvent]:
+    def get_events(self) -> list[AuditEvent]:
         """Returns in-memory recorded events (useful for test assertions)."""
         return list(self._local_buffer)
 

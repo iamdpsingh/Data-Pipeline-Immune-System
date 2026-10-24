@@ -16,8 +16,8 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass
-from datetime import datetime, timezone
-from typing import Any, Dict, List, Optional
+from datetime import UTC, datetime
+from typing import Any
 
 from agents.detection_agent import DetectionResult
 from agents.remediation_agent import RemediationResult
@@ -31,7 +31,7 @@ logger = logging.getLogger(__name__)
 class VerificationResult:
     incident_id: str
     all_checks_passed: bool
-    check_results: List[CheckResult]
+    check_results: list[CheckResult]
     verified_at: str
 
 
@@ -40,9 +40,9 @@ class VerificationAgent:
 
     def __init__(
         self,
-        settings: Optional[Settings] = None,
-        bq_client: Optional[Any] = None,
-        engine: Optional[VerificationEngine] = None,
+        settings: Settings | None = None,
+        bq_client: Any | None = None,
+        engine: VerificationEngine | None = None,
     ):
         self.settings = settings or load_settings()
         self.bq = bq_client
@@ -53,10 +53,10 @@ class VerificationAgent:
         incident_id: str,
         original_detection: DetectionResult,
         remediation_result: RemediationResult,
-        post_repair_metrics: Optional[Dict[str, Any]] = None,
+        post_repair_metrics: dict[str, Any] | None = None,
     ) -> VerificationResult:
         """Re-runs quality checks post-remediation and evaluates recovery."""
-        now_str = datetime.now(timezone.utc).isoformat()
+        now_str = datetime.now(UTC).isoformat()
 
         logger.info(
             "VerificationAgent verifying incident=%s action='%s' status=%s",

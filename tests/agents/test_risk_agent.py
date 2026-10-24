@@ -1,6 +1,5 @@
 """Unit tests for RiskAgent evaluating risk tiers and never-allow boundaries."""
 
-import pytest
 from agents.diagnosis_agent import DiagnosisResult
 from agents.risk_agent import RiskAgent, RiskInput, RiskLevel
 
@@ -23,7 +22,9 @@ class TestRiskAgent:
             used_llm=False,
         )
 
-        res = self.agent.assess(RiskInput(incident_id="inc-risk-001", diagnosis_result=diag_res))
+        res = self.agent.assess(
+            RiskInput(incident_id="inc-risk-001", diagnosis_result=diag_res)
+        )
         assert res.risk_level == RiskLevel.NEVER_ALLOW
         assert res.blocked is True
         assert res.auto_remediable is False
@@ -43,7 +44,9 @@ class TestRiskAgent:
             used_llm=False,
         )
 
-        res = self.agent.assess(RiskInput(incident_id="inc-risk-002", diagnosis_result=diag_res))
+        res = self.agent.assess(
+            RiskInput(incident_id="inc-risk-002", diagnosis_result=diag_res)
+        )
         assert res.risk_level == RiskLevel.LOW
         assert res.auto_remediable is True
         assert res.requires_human_approval is False
@@ -63,7 +66,9 @@ class TestRiskAgent:
             used_llm=False,
         )
 
-        res = self.agent.assess(RiskInput(incident_id="inc-risk-003", diagnosis_result=diag_res))
+        res = self.agent.assess(
+            RiskInput(incident_id="inc-risk-003", diagnosis_result=diag_res)
+        )
         assert res.risk_level == RiskLevel.HIGH
         assert res.auto_remediable is False
         assert res.requires_human_approval is True

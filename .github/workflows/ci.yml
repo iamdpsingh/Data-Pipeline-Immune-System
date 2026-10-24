@@ -25,3 +25,5 @@ jobs:
       - name: Run Pytest Suite
         run: |
           pytest -v --cov=src --cov=agents --cov-report=xml tests/
+        env:
+          PYTHONPATH: .

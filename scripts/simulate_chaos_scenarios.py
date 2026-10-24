@@ -5,9 +5,11 @@ import logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("dpis.chaos")
 
+
 def run_simulation(scenario: str):
     logger.info("Executing synthetic chaos drill: %s", scenario)
     logger.info("Verifying autonomous immune response. Resolution confirmed.")
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()

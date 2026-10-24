@@ -32,21 +32,27 @@ def _check_injection_allowed() -> None:
     if env == "production":
         override = os.getenv("DPIS_ALLOW_INJECTION_IN_PRODUCTION")
         if override != "I_UNDERSTAND_THE_RISK":
-            raise EnvironmentError("Failure injection is disabled in production.")
+            raise OSError("Failure injection is disabled in production.")
 
 
-def inject_duplicate_spike(source_file_path: str, duplicate_percentage: float = 0.15) -> int:
+def inject_duplicate_spike(
+    source_file_path: str, duplicate_percentage: float = 0.15
+) -> int:
     """Clones random records to simulate upstream duplicate broadcast."""
     _check_injection_allowed()
     path = Path(source_file_path)
 
     if not path.exists():
         records = [
-            {"order_id": f"ORD-{i:04d}", "customer_id": f"CUST-{i:06d}", "total_amount": 50.0}
+            {
+                "order_id": f"ORD-{i:04d}",
+                "customer_id": f"CUST-{i:06d}",
+                "total_amount": 50.0,
+            }
             for i in range(100)
         ]
     else:
-        with open(path, "r", encoding="utf-8") as f:
+        with open(path, encoding="utf-8") as f:
             records = [json.loads(line) for line in f if line.strip()]
 
     dup_count = int(len(records) * duplicate_percentage)
@@ -69,7 +75,9 @@ def inject_duplicate_spike(source_file_path: str, duplicate_percentage: float = 
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Inject duplicate rows into source file.")
+    parser = argparse.ArgumentParser(
+        description="Inject duplicate rows into source file."
+    )
     parser.add_argument("--source-file", default="scratch/orders_sample.json")
     parser.add_argument("--percentage", type=float, default=15.0)
     args = parser.parse_args()

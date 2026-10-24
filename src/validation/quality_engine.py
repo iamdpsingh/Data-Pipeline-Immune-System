@@ -11,9 +11,8 @@ from __future__ import annotations
 
 import uuid
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from enum import Enum
-from typing import Any, Dict, List, Optional
 
 
 class CheckType(str, Enum):
@@ -66,7 +65,11 @@ class DataQualityValidator:
         """Evaluates null proportion against allowed tolerance."""
         ratio = (null_count / total_count) if total_count > 0 else 0.0
         status = CheckStatus.PASS if ratio <= threshold else CheckStatus.FAIL
-        severity = "P1" if ratio > (threshold * 3) else "P2" if status == CheckStatus.FAIL else "P3"
+        severity = (
+            "P1"
+            if ratio > (threshold * 3)
+            else "P2" if status == CheckStatus.FAIL else "P3"
+        )
 
         return QualityCheckResult(
             quality_id=f"chk-{uuid.uuid4().hex[:12]}",
@@ -81,7 +84,7 @@ class DataQualityValidator:
             status=status,
             severity=severity,
             is_verification=is_verification,
-            timestamp=datetime.now(timezone.utc),
+            timestamp=datetime.now(UTC),
         )
 
     def check_duplicate_ratio(
@@ -95,7 +98,9 @@ class DataQualityValidator:
         """Evaluates duplicate row proportion against allowed tolerance."""
         ratio = (duplicate_count / total_count) if total_count > 0 else 0.0
         status = CheckStatus.PASS if ratio <= threshold else CheckStatus.FAIL
-        severity = "P1" if ratio > 0.05 else "P2" if status == CheckStatus.FAIL else "P3"
+        severity = (
+            "P1" if ratio > 0.05 else "P2" if status == CheckStatus.FAIL else "P3"
+        )
 
         return QualityCheckResult(
             quality_id=f"chk-{uuid.uuid4().hex[:12]}",
@@ -110,7 +115,7 @@ class DataQualityValidator:
             status=status,
             severity=severity,
             is_verification=is_verification,
-            timestamp=datetime.now(timezone.utc),
+            timestamp=datetime.now(UTC),
         )
 
     def check_volume_bounds(
@@ -125,9 +130,11 @@ class DataQualityValidator:
         ratio = (actual_rows / expected_rows) if expected_rows > 0 else 1.0
         is_pass = lower_bound_pct <= ratio <= upper_bound_pct
         status = CheckStatus.PASS if is_pass else CheckStatus.FAIL
-        
+
         # Drops below 50% are critical (P1), minor variance is P2/P3
-        severity = "P1" if ratio < 0.50 else "P2" if status == CheckStatus.FAIL else "P3"
+        severity = (
+            "P1" if ratio < 0.50 else "P2" if status == CheckStatus.FAIL else "P3"
+        )
 
         return QualityCheckResult(
             quality_id=f"chk-{uuid.uuid4().hex[:12]}",
@@ -142,5 +149,5 @@ class DataQualityValidator:
             status=status,
             severity=severity,
             is_verification=is_verification,
-            timestamp=datetime.now(timezone.utc),
+            timestamp=datetime.now(UTC),
         )

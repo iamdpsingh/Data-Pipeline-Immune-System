@@ -5,9 +5,15 @@ import logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("dpis.replay")
 
+
 def replay(pipeline: str, dry_run: bool):
-    logger.info("Replaying dead-letter records for pipeline '%s' (dry_run=%s)", pipeline, dry_run)
+    logger.info(
+        "Replaying dead-letter records for pipeline '%s' (dry_run=%s)",
+        pipeline,
+        dry_run,
+    )
     logger.info("0 errors encountered during replay.")
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()

@@ -22,9 +22,7 @@ import argparse
 import json
 import logging
 import os
-import random
 from pathlib import Path
-from typing import List
 
 logger = logging.getLogger(__name__)
 
@@ -35,11 +33,13 @@ def _check_injection_allowed() -> None:
     if env == "production":
         override = os.getenv("DPIS_ALLOW_INJECTION_IN_PRODUCTION")
         if override != "I_UNDERSTAND_THE_RISK":
-            raise EnvironmentError(
+            raise OSError(
                 "Failure injection is disabled in production. "
                 "Set DPIS_ALLOW_INJECTION_IN_PRODUCTION=I_UNDERSTAND_THE_RISK to override."
             )
-    logger.info("Environment guard verified: executing injection in environment '%s'", env)
+    logger.info(
+        "Environment guard verified: executing injection in environment '%s'", env
+    )
 
 
 def inject_row_drop(source_file_path: str, drop_percentage: float) -> int:
@@ -47,13 +47,20 @@ def inject_row_drop(source_file_path: str, drop_percentage: float) -> int:
     _check_injection_allowed()
     path = Path(source_file_path)
     if not path.exists():
-        logger.warning("Target file %s does not exist on local disk. Creating synthetic sample.", path)
+        logger.warning(
+            "Target file %s does not exist on local disk. Creating synthetic sample.",
+            path,
+        )
         records = [
-            {"order_id": f"ORD-20261023-{i:04d}", "customer_id": f"CUST-000001", "total_amount": 100.0}
+            {
+                "order_id": f"ORD-20261023-{i:04d}",
+                "customer_id": "CUST-000001",
+                "total_amount": 100.0,
+            }
             for i in range(1000)
         ]
     else:
-        with open(path, "r", encoding="utf-8") as f:
+        with open(path, encoding="utf-8") as f:
             records = [json.loads(line) for line in f if line.strip()]
 
     total_records = len(records)
@@ -77,8 +84,15 @@ def inject_row_drop(source_file_path: str, drop_percentage: float) -> int:
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Inject row count drop anomaly.")
-    parser.add_argument("--source-file", default="scratch/orders_sample.json", help="Path to JSON file")
-    parser.add_argument("--drop-percentage", type=float, default=48.0, help="Drop percentage (e.g. 48.0)")
+    parser.add_argument(
+        "--source-file", default="scratch/orders_sample.json", help="Path to JSON file"
+    )
+    parser.add_argument(
+        "--drop-percentage",
+        type=float,
+        default=48.0,
+        help="Drop percentage (e.g. 48.0)",
+    )
     args = parser.parse_args()
 
     logging.basicConfig(level=logging.INFO)

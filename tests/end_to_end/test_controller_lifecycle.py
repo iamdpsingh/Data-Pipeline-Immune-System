@@ -1,6 +1,5 @@
 """End-to-end integration tests for ImmuneSystemController incident lifecycle."""
 
-import pytest
 from agents.remediation_agent import ApprovalRecord
 from src.controller.controller import ImmuneSystemController, IncidentState
 

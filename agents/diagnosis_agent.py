@@ -16,14 +16,13 @@ Architecture:
 from __future__ import annotations
 
 import logging
-from dataclasses import dataclass, field
-from datetime import datetime, timezone
-from typing import Any, Dict, List, Optional
+from dataclasses import dataclass
+from datetime import UTC, datetime
 
 from agents.detection_agent import DetectionResult
 from src.config.settings import Settings, load_settings
 from src.diagnosis.llm_client import LLMClient
-from src.memory.incident_memory import HistoricalIncident, IncidentMemory
+from src.memory.incident_memory import IncidentMemory
 
 logger = logging.getLogger(__name__)
 
@@ -42,9 +41,9 @@ class DiagnosisResult:
     affected_pipeline: str
     affected_table: str
     confidence: float
-    evidence: List[str]
+    evidence: list[str]
     recommended_action: str
-    similar_incidents: List[str]
+    similar_incidents: list[str]
     diagnosed_at: str
     used_llm: bool
 
@@ -54,9 +53,9 @@ class DiagnosisAgent:
 
     def __init__(
         self,
-        settings: Optional[Settings] = None,
-        llm_client: Optional[LLMClient] = None,
-        memory: Optional[IncidentMemory] = None,
+        settings: Settings | None = None,
+        llm_client: LLMClient | None = None,
+        memory: IncidentMemory | None = None,
     ):
         self.settings = settings or load_settings()
         self.llm = llm_client or LLMClient(
@@ -68,7 +67,7 @@ class DiagnosisAgent:
 
     def diagnose(self, input_data: DiagnosisInput) -> DiagnosisResult:
         """Investigates incident symptoms and returns a diagnostic conclusion."""
-        now_str = datetime.now(timezone.utc).isoformat()
+        now_str = datetime.now(UTC).isoformat()
         det = input_data.detection_result
 
         logger.info(
@@ -88,7 +87,9 @@ class DiagnosisAgent:
 
         # 2. Check if Detection already resolved root cause deterministically (ADR-003)
         if det.recommended_action and det.confidence >= 0.90:
-            logger.info("Using deterministic diagnosis for incident %s", input_data.incident_id)
+            logger.info(
+                "Using deterministic diagnosis for incident %s", input_data.incident_id
+            )
             return DiagnosisResult(
                 incident_id=input_data.incident_id,
                 root_cause=det.anomaly_type or "DETERMINISTIC_FAILURE",
@@ -108,7 +109,9 @@ class DiagnosisAgent:
             pipeline_id=det.pipeline_id,
             anomaly_type=det.anomaly_type or "UNKNOWN",
             evidence=det.evidence,
-            similar_incidents=[{"id": s.incident_id, "cause": s.root_cause} for s in similar_past],
+            similar_incidents=[
+                {"id": s.incident_id, "cause": s.root_cause} for s in similar_past
+            ],
         )
 
         return DiagnosisResult(

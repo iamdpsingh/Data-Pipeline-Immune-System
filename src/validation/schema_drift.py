@@ -15,7 +15,7 @@ from __future__ import annotations
 import re
 from dataclasses import dataclass
 from enum import Enum
-from typing import Any, Dict, List, Optional, Set
+from typing import Any
 
 
 class SchemaChangeType(str, Enum):
@@ -47,9 +47,9 @@ class ColumnDef:
 class SchemaDiffResult:
     change_type: SchemaChangeType
     severity: str  # P0, P1, P3, or NONE
-    added_columns: List[ColumnDef]
-    removed_columns: List[ColumnDef]
-    modified_columns: List[Dict[str, Any]]
+    added_columns: list[ColumnDef]
+    removed_columns: list[ColumnDef]
+    modified_columns: list[dict[str, Any]]
     is_safe_to_auto_migrate: bool
     summary_message: str
 
@@ -65,8 +65,8 @@ class SchemaDriftInspector:
     @classmethod
     def compare(
         cls,
-        baseline_schema: Dict[str, ColumnDef],
-        observed_schema: Dict[str, ColumnDef],
+        baseline_schema: dict[str, ColumnDef],
+        observed_schema: dict[str, ColumnDef],
     ) -> SchemaDiffResult:
         """Compares baseline column definitions to observed definitions."""
         baseline_keys = set(baseline_schema.keys())
@@ -97,11 +97,13 @@ class SchemaDriftInspector:
             base_col = baseline_schema[key]
             obs_col = observed_schema[key]
             if base_col.type != obs_col.type:
-                modified_cols.append({
-                    "column": key,
-                    "old_type": base_col.type,
-                    "new_type": obs_col.type,
-                })
+                modified_cols.append(
+                    {
+                        "column": key,
+                        "old_type": base_col.type,
+                        "new_type": obs_col.type,
+                    }
+                )
 
         # Evaluate breaking vs additive
         if removed_cols or modified_cols:

@@ -14,7 +14,7 @@ from __future__ import annotations
 
 import logging
 import os
-from typing import Any, Dict, Optional
+from typing import Any
 
 from fastapi import FastAPI, HTTPException, status
 from pydantic import BaseModel, Field
@@ -39,20 +39,22 @@ controller = ImmuneSystemController(settings=settings)
 class RunCompletionPayload(BaseModel):
     pipeline_id: str = Field(..., json_schema_extra={"example": "orders"})
     run_id: str = Field(..., json_schema_extra={"example": "run-20261023-001"})
-    context: Dict[str, Any] = Field(default_factory=dict)
+    context: dict[str, Any] = Field(default_factory=dict)
 
 
 class ApprovalPayload(BaseModel):
     incident_id: str = Field(..., json_schema_extra={"example": "inc-77f98d"})
-    approved_by: str = Field(..., json_schema_extra={"example": "data_engineer@company.com"})
+    approved_by: str = Field(
+        ..., json_schema_extra={"example": "data_engineer@company.com"}
+    )
     approval_id: str = Field(..., json_schema_extra={"example": "appr-20261023-01"})
     pipeline_id: str = Field(default="orders")
     run_id: str = Field(default="run-manual")
-    context: Dict[str, Any] = Field(default_factory=dict)
+    context: dict[str, Any] = Field(default_factory=dict)
 
 
 @app.get("/health", status_code=status.HTTP_200_OK)
-def health_check() -> Dict[str, str]:
+def health_check() -> dict[str, str]:
     """Liveness probe for Cloud Run container monitoring."""
     return {
         "status": "UP",
@@ -63,7 +65,7 @@ def health_check() -> Dict[str, str]:
 
 
 @app.post("/api/v1/runs/complete", status_code=status.HTTP_200_OK)
-def handle_run_completion(payload: RunCompletionPayload) -> Dict[str, Any]:
+def handle_run_completion(payload: RunCompletionPayload) -> dict[str, Any]:
     """Receives pipeline completion events and executes the immune cycle."""
     try:
         result = controller.handle_run_completion(
@@ -84,11 +86,11 @@ def handle_run_completion(payload: RunCompletionPayload) -> Dict[str, Any]:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=str(exc),
-        )
+        ) from exc
 
 
 @app.post("/api/v1/incidents/approve", status_code=status.HTTP_200_OK)
-def approve_incident_action(payload: ApprovalPayload) -> Dict[str, Any]:
+def approve_incident_action(payload: ApprovalPayload) -> dict[str, Any]:
     """Authorizes a high-risk remediation action awaiting human sign-off."""
     approval_rec = ApprovalRecord(
         incident_id=payload.incident_id,
@@ -114,4 +116,4 @@ def approve_incident_action(payload: ApprovalPayload) -> Dict[str, Any]:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=str(exc),
-        )
+        ) from exc

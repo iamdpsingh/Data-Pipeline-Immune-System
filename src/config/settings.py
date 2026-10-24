@@ -10,14 +10,15 @@ configuration files, validating thresholds, SLAs, and safety parameters.
 from __future__ import annotations
 
 import os
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import Any
 
 import yaml
 
 try:
     from dotenv import load_dotenv
+
     load_dotenv()
 except ImportError:
     pass
@@ -42,7 +43,7 @@ class DetectionConfig:
     row_count_zscore_threshold: float
     min_baseline_runs: int
     baseline_lookback_days: int
-    freshness_sla_minutes: Optional[int] = None
+    freshness_sla_minutes: int | None = None
 
 
 @dataclass(frozen=True)
@@ -55,8 +56,8 @@ class QualityConfig:
 
 @dataclass(frozen=True)
 class HealthScoreConfig:
-    weights: Dict[str, float]
-    thresholds: Dict[str, int]
+    weights: dict[str, float]
+    thresholds: dict[str, int]
 
 
 @dataclass(frozen=True)
@@ -117,8 +118,8 @@ def load_settings(env: str | None = None) -> Settings:
     if not config_file.exists():
         raise FileNotFoundError(f"Configuration file not found at: {config_file}")
 
-    with open(config_file, "r", encoding="utf-8") as f:
-        data: Dict[str, Any] = yaml.safe_load(f)
+    with open(config_file, encoding="utf-8") as f:
+        data: dict[str, Any] = yaml.safe_load(f)
 
     raw_freshness = data["detection"].get("freshness_sla_minutes")
     freshness_sla = int(raw_freshness) if raw_freshness is not None else None
@@ -136,7 +137,9 @@ def load_settings(env: str | None = None) -> Settings:
             quarantine_bucket=data["gcs"]["quarantine_bucket"],
         ),
         detection=DetectionConfig(
-            row_count_zscore_threshold=float(data["detection"]["row_count_zscore_threshold"]),
+            row_count_zscore_threshold=float(
+                data["detection"]["row_count_zscore_threshold"]
+            ),
             min_baseline_runs=int(data["detection"]["min_baseline_runs"]),
             baseline_lookback_days=int(data["detection"]["baseline_lookback_days"]),
             freshness_sla_minutes=freshness_sla,
@@ -159,8 +162,12 @@ def load_settings(env: str | None = None) -> Settings:
         ),
         remediation=RemediationConfig(
             max_retry_count=int(data["remediation"]["max_retry_count"]),
-            retry_backoff_base_seconds=int(data["remediation"]["retry_backoff_base_seconds"]),
-            quarantine_max_percentage=float(data["remediation"]["quarantine_max_percentage"]),
+            retry_backoff_base_seconds=int(
+                data["remediation"]["retry_backoff_base_seconds"]
+            ),
+            quarantine_max_percentage=float(
+                data["remediation"]["quarantine_max_percentage"]
+            ),
         ),
         failure_injection=FailureInjectionConfig(
             enabled=bool(data.get("failure_injection", {}).get("enabled", False)),

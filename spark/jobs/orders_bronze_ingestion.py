@@ -11,7 +11,7 @@ from __future__ import annotations
 
 import argparse
 import logging
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from pyspark.sql import functions as F
 from pyspark.sql.types import (
@@ -28,16 +28,18 @@ from spark.utils.spark_session import get_spark_session
 logger = logging.getLogger(__name__)
 
 
-SOURCE_ORDERS_SCHEMA = StructType([
-    StructField("order_id", StringType(), False),
-    StructField("customer_id", StringType(), False),
-    StructField("order_date", StringType(), False),
-    StructField("status", StringType(), False),
-    StructField("total_amount", DoubleType(), False),
-    StructField("currency", StringType(), False),
-    StructField("items_count", IntegerType(), True),
-    StructField("created_at", StringType(), True),
-])
+SOURCE_ORDERS_SCHEMA = StructType(
+    [
+        StructField("order_id", StringType(), False),
+        StructField("customer_id", StringType(), False),
+        StructField("order_date", StringType(), False),
+        StructField("status", StringType(), False),
+        StructField("total_amount", DoubleType(), False),
+        StructField("currency", StringType(), False),
+        StructField("items_count", IntegerType(), True),
+        StructField("created_at", StringType(), True),
+    ]
+)
 
 
 def run_bronze_ingestion(
@@ -62,11 +64,10 @@ def run_bronze_ingestion(
     logger.info("Reading source orders from: %s", source_path)
     raw_df = spark.read.schema(SOURCE_ORDERS_SCHEMA).json(source_path)
 
-    ingested_at = datetime.now(timezone.utc).isoformat()
+    ingested_at = datetime.now(UTC).isoformat()
 
     bronze_df = (
-        raw_df
-        .withColumn("_source_file", F.input_file_name())
+        raw_df.withColumn("_source_file", F.input_file_name())
         .withColumn("_ingested_at", F.lit(ingested_at).cast(TimestampType()))
         .withColumn("_run_id", F.lit(run_id))
     )
@@ -75,9 +76,9 @@ def run_bronze_ingestion(
     logger.info("Ingested %d raw records into Bronze (run %s)", row_count, run_id)
 
     if write_format == "bigquery":
-        bronze_df.write.format("bigquery").option(
-            "table", target_table_or_path
-        ).mode("append").save()
+        bronze_df.write.format("bigquery").option("table", target_table_or_path).mode(
+            "append"
+        ).save()
     else:
         bronze_df.write.mode("append").parquet(target_table_or_path)
 
@@ -87,7 +88,9 @@ def run_bronze_ingestion(
 def main() -> None:
     parser = argparse.ArgumentParser(description="Bronze orders ingestion job.")
     parser.add_argument("--source-path", required=True, help="Input GCS/local path")
-    parser.add_argument("--target", required=True, help="Target BigQuery table or storage path")
+    parser.add_argument(
+        "--target", required=True, help="Target BigQuery table or storage path"
+    )
     parser.add_argument("--run-id", required=True, help="Execution Run ID")
     parser.add_argument("--format", default="parquet", choices=["parquet", "bigquery"])
     args = parser.parse_args()

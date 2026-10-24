@@ -5,8 +5,6 @@
 
 from __future__ import annotations
 
-from typing import Dict
-
 from src.validation.schema_drift import (
     ColumnDef,
     SchemaDiffResult,
@@ -19,8 +17,8 @@ class SchemaComparator:
 
     def compare_schemas(
         self,
-        baseline: Dict[str, ColumnDef],
-        observed: Dict[str, ColumnDef],
+        baseline: dict[str, ColumnDef],
+        observed: dict[str, ColumnDef],
     ) -> SchemaDiffResult:
         """Executes full schema comparison returning structured diff."""
         return SchemaDriftInspector.compare(baseline, observed)

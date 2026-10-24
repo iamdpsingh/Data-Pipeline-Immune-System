@@ -17,7 +17,7 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass
-from typing import Any, Optional
+from typing import Any
 
 from agents.detection_agent import DetectionResult
 from agents.diagnosis_agent import DiagnosisResult
@@ -32,13 +32,14 @@ logger = logging.getLogger(__name__)
 @dataclass(frozen=True)
 class IncidentRecord:
     """Full incident record passed to the Learning Agent for storage."""
+
     incident_id: str
     pipeline_id: str
     environment: str
     detection: DetectionResult
     diagnosis: DiagnosisResult
-    remediation: Optional[RemediationResult]
-    verification: Optional[VerificationResult]
+    remediation: RemediationResult | None
+    verification: VerificationResult | None
     resolution_time_minutes: float
 
 
@@ -47,13 +48,15 @@ class LearningAgent:
 
     def __init__(
         self,
-        settings: Optional[Settings] = None,
-        bq_client: Optional[Any] = None,
-        memory: Optional[IncidentMemory] = None,
+        settings: Settings | None = None,
+        bq_client: Any | None = None,
+        memory: IncidentMemory | None = None,
     ):
         self.settings = settings or load_settings()
         self.bq = bq_client
-        self.memory = memory or IncidentMemory(dataset=self.settings.project.dataset, bq_client=bq_client)
+        self.memory = memory or IncidentMemory(
+            dataset=self.settings.project.dataset, bq_client=bq_client
+        )
 
     def store(self, record: IncidentRecord) -> bool:
         """Writes a resolved incident to incident memory.
@@ -62,7 +65,11 @@ class LearningAgent:
         incident lifecycle completes safely.
         """
         try:
-            action = record.remediation.action_executed if record.remediation else "MANUAL_INTERVENTION"
+            action = (
+                record.remediation.action_executed
+                if record.remediation
+                else "MANUAL_INTERVENTION"
+            )
             symptoms = record.detection.evidence + record.diagnosis.evidence
 
             self.memory.record_resolution(
@@ -72,7 +79,11 @@ class LearningAgent:
                 symptoms=symptoms,
                 root_cause=record.diagnosis.root_cause,
                 resolution_action=action,
-                outcome="SUCCESS" if (record.verification and record.verification.all_checks_passed) else "PARTIAL",
+                outcome=(
+                    "SUCCESS"
+                    if (record.verification and record.verification.all_checks_passed)
+                    else "PARTIAL"
+                ),
             )
 
             logger.info(

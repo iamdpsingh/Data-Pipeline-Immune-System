@@ -11,7 +11,10 @@ irreversible consequences, the enforcement must be in deterministic code.
 
 import pytest
 
-from src.risk.never_allow import check_never_allow, NeverAllowViolation, NEVER_ALLOW_ACTIONS
+from src.risk.never_allow import (
+    NEVER_ALLOW_ACTIONS,
+    check_never_allow,
+)
 
 
 @pytest.mark.safety_critical

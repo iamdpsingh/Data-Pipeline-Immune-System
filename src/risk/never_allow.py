@@ -25,22 +25,24 @@ from __future__ import annotations
 #
 # If you think a new action belongs here, it almost certainly does.
 # If you think something should be removed from here, be very sure.
-NEVER_ALLOW_ACTIONS: frozenset[str] = frozenset({
-    "DELETE_PRODUCTION_TABLE",
-    "DROP_SCHEMA",
-    "EXECUTE_ARBITRARY_SQL",
-    "MODIFY_IAM_PERMISSION",
-    "DISABLE_VALIDATION",
-    "BYPASS_QUALITY_GATE",
-    "EXPOSE_PII_COLUMN",
-    "MODIFY_FINANCIAL_RECORD",
-    "DELETE_QUARANTINE_TABLE",
-    "DELETE_INCIDENT_MEMORY",
-    "TRUNCATE_GOLD_TABLE",
-    "MODIFY_GOLD_TABLE_SCHEMA",
-    "GRANT_PUBLIC_ACCESS",
-    "DISABLE_AUDIT_LOGGING",
-})
+NEVER_ALLOW_ACTIONS: frozenset[str] = frozenset(
+    {
+        "DELETE_PRODUCTION_TABLE",
+        "DROP_SCHEMA",
+        "EXECUTE_ARBITRARY_SQL",
+        "MODIFY_IAM_PERMISSION",
+        "DISABLE_VALIDATION",
+        "BYPASS_QUALITY_GATE",
+        "EXPOSE_PII_COLUMN",
+        "MODIFY_FINANCIAL_RECORD",
+        "DELETE_QUARANTINE_TABLE",
+        "DELETE_INCIDENT_MEMORY",
+        "TRUNCATE_GOLD_TABLE",
+        "MODIFY_GOLD_TABLE_SCHEMA",
+        "GRANT_PUBLIC_ACCESS",
+        "DISABLE_AUDIT_LOGGING",
+    }
+)
 
 
 def check_never_allow(action: str) -> bool:
@@ -66,4 +68,5 @@ class NeverAllowViolation(Exception):
     - Mark the incident as BLOCKED
     - Alert immediately
     """
+
     pass

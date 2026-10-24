@@ -14,7 +14,7 @@ from __future__ import annotations
 
 import argparse
 import logging
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from pyspark.sql import Window
 from pyspark.sql import functions as F
@@ -67,8 +67,7 @@ def build_silver_transformation(
         rate_expr = F.when(F.col("currency") == curr, F.lit(rate)).otherwise(rate_expr)
 
     standardized_df = (
-        deduped_df
-        .withColumn("order_timestamp", F.to_timestamp("order_date"))
+        deduped_df.withColumn("order_timestamp", F.to_timestamp("order_date"))
         .withColumn("order_date_partition", F.to_date("order_date"))
         .withColumn("original_currency", F.col("currency"))
         .withColumn(
@@ -77,7 +76,7 @@ def build_silver_transformation(
         )
         .withColumn(
             "_processed_at",
-            F.lit(datetime.now(timezone.utc).isoformat()).cast(TimestampType()),
+            F.lit(datetime.now(UTC).isoformat()).cast(TimestampType()),
         )
         .withColumn("_run_id", F.lit(run_id))
     )
@@ -86,17 +85,20 @@ def build_silver_transformation(
     rules = [
         QualityRule(
             rule_name="NON_NULL_ORDER_ID",
-            condition=F.col("order_id").isNotNull() & (F.length(F.trim("order_id")) > 0),
+            condition=F.col("order_id").isNotNull()
+            & (F.length(F.trim("order_id")) > 0),
             failure_reason="order_id is null or blank",
         ),
         QualityRule(
             rule_name="NON_NULL_CUSTOMER_ID",
-            condition=F.col("customer_id").isNotNull() & (F.length(F.trim("customer_id")) > 0),
+            condition=F.col("customer_id").isNotNull()
+            & (F.length(F.trim("customer_id")) > 0),
             failure_reason="customer_id is null or blank",
         ),
         QualityRule(
             rule_name="POSITIVE_AMOUNT",
-            condition=F.col("total_amount_usd").isNotNull() & (F.col("total_amount_usd") > 0.0),
+            condition=F.col("total_amount_usd").isNotNull()
+            & (F.col("total_amount_usd") > 0.0),
             failure_reason="total_amount_usd is negative or zero",
         ),
         QualityRule(
@@ -122,9 +124,13 @@ def build_silver_transformation(
 
     logger.info("Writing %d valid records to Silver: %s", valid_count, silver_target)
     if write_format == "bigquery":
-        valid_df.write.format("bigquery").option("table", silver_target).mode("append").save()
+        valid_df.write.format("bigquery").option("table", silver_target).mode(
+            "append"
+        ).save()
     else:
-        valid_df.write.mode("append").partitionBy("order_date_partition").parquet(silver_target)
+        valid_df.write.mode("append").partitionBy("order_date_partition").parquet(
+            silver_target
+        )
 
     if quarantine_count > 0:
         logger.warning(
@@ -134,7 +140,9 @@ def build_silver_transformation(
             ratio * 100,
         )
         if write_format == "bigquery":
-            quarantine_df.write.format("bigquery").option("table", quarantine_target).mode("append").save()
+            quarantine_df.write.format("bigquery").option(
+                "table", quarantine_target
+            ).mode("append").save()
         else:
             quarantine_df.write.mode("append").parquet(quarantine_target)
 
@@ -146,7 +154,9 @@ def build_silver_transformation(
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Silver transformation with quarantine.")
+    parser = argparse.ArgumentParser(
+        description="Silver transformation with quarantine."
+    )
     parser.add_argument("--bronze-source", required=True)
     parser.add_argument("--silver-target", required=True)
     parser.add_argument("--quarantine-target", required=True)

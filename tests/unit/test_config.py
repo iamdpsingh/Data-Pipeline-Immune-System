@@ -1,6 +1,7 @@
 """Unit tests for configuration loader and environment settings."""
 
 import pytest
+
 from src.config.settings import load_settings
 
 

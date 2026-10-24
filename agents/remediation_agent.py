@@ -16,9 +16,9 @@ Architecture:
 from __future__ import annotations
 
 import logging
-from dataclasses import dataclass, field
-from datetime import datetime, timezone
-from typing import Any, Dict, Optional
+from dataclasses import dataclass
+from datetime import UTC, datetime
+from typing import Any
 
 from agents.risk_agent import RiskAssessment
 from src.config.settings import Settings, load_settings
@@ -35,7 +35,7 @@ class RemediationResult:
     execution_status: str  # SUCCESS, FAILED, PARTIAL
     started_at: str
     completed_at: str
-    details: Dict[str, Any]
+    details: dict[str, Any]
 
 
 @dataclass(frozen=True)
@@ -51,9 +51,9 @@ class RemediationAgent:
 
     def __init__(
         self,
-        settings: Optional[Settings] = None,
-        bq_client: Optional[Any] = None,
-        action_library: Optional[ActionLibrary] = None,
+        settings: Settings | None = None,
+        bq_client: Any | None = None,
+        action_library: ActionLibrary | None = None,
     ):
         self.settings = settings or load_settings()
         self.bq = bq_client
@@ -62,11 +62,11 @@ class RemediationAgent:
     def remediate(
         self,
         risk_assessment: RiskAssessment,
-        approval: Optional[ApprovalRecord] = None,
-        execution_context: Optional[Dict[str, Any]] = None,
+        approval: ApprovalRecord | None = None,
+        execution_context: dict[str, Any] | None = None,
     ) -> RemediationResult:
         """Executes the authorized remediation action."""
-        started_at = datetime.now(timezone.utc).isoformat()
+        started_at = datetime.now(UTC).isoformat()
         action = risk_assessment.approved_action or ""
 
         # 1. Check if action is blocked by never-allow rules
@@ -99,7 +99,7 @@ class RemediationAgent:
 
         # Execute idempotent action
         exec_outcome = self.action_library.execute(action, details)
-        completed_at = datetime.now(timezone.utc).isoformat()
+        completed_at = datetime.now(UTC).isoformat()
 
         return RemediationResult(
             incident_id=risk_assessment.incident_id,

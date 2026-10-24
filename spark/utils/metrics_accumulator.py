@@ -1,6 +1,7 @@
 # PySpark Batch Metrics Accumulator
 from dataclasses import dataclass
 
+
 @dataclass
 class BatchMetrics:
     total_records: int

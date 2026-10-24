@@ -16,12 +16,14 @@ from __future__ import annotations
 
 import logging
 import os
-from datetime import datetime, timezone
-from typing import Any, Dict, Optional
+from datetime import UTC, datetime
+from typing import Any
+
 import requests
 
 try:
     from dotenv import load_dotenv
+
     load_dotenv()
 except ImportError:
     pass
@@ -34,14 +36,14 @@ class WhatsAppAlertDispatcher:
 
     def __init__(
         self,
-        api_token: Optional[str] = None,
-        phone_number_id: Optional[str] = None,
-        telegram_bot_token: Optional[str] = None,
-        telegram_chat_id: Optional[str] = None,
-        ntfy_topic: Optional[str] = None,
-        webhook_url: Optional[str] = None,
-        pubsub_topic: Optional[str] = None,
-        from_number: Optional[str] = None,
+        api_token: str | None = None,
+        phone_number_id: str | None = None,
+        telegram_bot_token: str | None = None,
+        telegram_chat_id: str | None = None,
+        ntfy_topic: str | None = None,
+        webhook_url: str | None = None,
+        pubsub_topic: str | None = None,
+        from_number: str | None = None,
     ):
         # 1. Meta WhatsApp Cloud API (Free Tier: 1,000 free conversations/mo)
         self.api_token = api_token or os.getenv("WHATSAPP_API_TOKEN")
@@ -58,7 +60,9 @@ class WhatsAppAlertDispatcher:
         self.webhook_url = webhook_url or os.getenv("ALERT_WEBHOOK_URL")
 
         # 5. GCP Pub/Sub Topic
-        self.pubsub_topic = pubsub_topic or os.getenv("GCP_PUBSUB_TOPIC", "dpis-operational-alerts")
+        self.pubsub_topic = pubsub_topic or os.getenv(
+            "GCP_PUBSUB_TOPIC", "dpis-operational-alerts"
+        )
 
     def format_hourly_alert(
         self,
@@ -70,8 +74,12 @@ class WhatsAppAlertDispatcher:
         quarantined_last_hour: int = 0,
     ) -> str:
         """Constructs an operational markdown alert message."""
-        now_utc = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:00 UTC")
-        status_emoji = "🟢" if health_status == "HEALTHY" else "🟡" if health_status == "WARNING" else "🔴"
+        now_utc = datetime.now(UTC).strftime("%Y-%m-%d %H:00 UTC")
+        status_emoji = (
+            "🟢"
+            if health_status == "HEALTHY"
+            else "🟡" if health_status == "WARNING" else "🔴"
+        )
 
         console_url = os.getenv("CLOUD_RUN_URL", "https://dpis-api.internal")
         return (
@@ -92,7 +100,7 @@ class WhatsAppAlertDispatcher:
     def send_hourly_alert(
         self,
         recipient_phone: str,
-        message: Optional[str] = None,
+        message: str | None = None,
         **kwargs: Any,
     ) -> bool:
         """Sends hourly notification to the specified recipient via free channels."""
@@ -101,9 +109,16 @@ class WhatsAppAlertDispatcher:
         # 1. Meta WhatsApp Cloud API (Free Tier: 1,000 free conversations/month)
         if self.api_token and self.phone_number_id:
             try:
-                endpoint = f"https://graph.facebook.com/v18.0/{self.phone_number_id}/messages"
-                headers = {"Authorization": f"Bearer {self.api_token}", "Content-Type": "application/json"}
-                clean_phone = recipient_phone.replace("+", "").replace("whatsapp:", "").strip()
+                endpoint = (
+                    f"https://graph.facebook.com/v18.0/{self.phone_number_id}/messages"
+                )
+                headers = {
+                    "Authorization": f"Bearer {self.api_token}",
+                    "Content-Type": "application/json",
+                }
+                clean_phone = (
+                    recipient_phone.replace("+", "").replace("whatsapp:", "").strip()
+                )
                 data = {
                     "messaging_product": "whatsapp",
                     "to": clean_phone,
@@ -112,16 +127,23 @@ class WhatsAppAlertDispatcher:
                 }
                 resp = requests.post(endpoint, headers=headers, json=data, timeout=10)
                 if resp.status_code in (200, 201):
-                    logger.info("WhatsApp alert sent via Meta Free Cloud API to %s", recipient_phone)
+                    logger.info(
+                        "WhatsApp alert sent via Meta Free Cloud API to %s",
+                        recipient_phone,
+                    )
                     return True
-                logger.warning("Meta WhatsApp Cloud API error: %s %s", resp.status_code, resp.text)
+                logger.warning(
+                    "Meta WhatsApp Cloud API error: %s %s", resp.status_code, resp.text
+                )
             except Exception as exc:
                 logger.error("Error sending Meta WhatsApp message: %s", exc)
 
         # 2. Telegram Bot API (100% Free Forever, instant phone alerts)
         if self.telegram_bot_token and self.telegram_chat_id:
             try:
-                tg_endpoint = f"https://api.telegram.org/bot{self.telegram_bot_token}/sendMessage"
+                tg_endpoint = (
+                    f"https://api.telegram.org/bot{self.telegram_bot_token}/sendMessage"
+                )
                 resp = requests.post(
                     tg_endpoint,
                     json={
@@ -132,7 +154,10 @@ class WhatsAppAlertDispatcher:
                     timeout=10,
                 )
                 if resp.status_code in (200, 201):
-                    logger.info("Alert dispatched via free Telegram Bot to chat %s", self.telegram_chat_id)
+                    logger.info(
+                        "Alert dispatched via free Telegram Bot to chat %s",
+                        self.telegram_chat_id,
+                    )
                     return True
             except Exception as exc:
                 logger.error("Error dispatching free Telegram alert: %s", exc)
@@ -165,7 +190,9 @@ class WhatsAppAlertDispatcher:
                     timeout=10,
                 )
                 if resp.status_code == 200:
-                    logger.info("Free push alert sent via ntfy.sh topic '%s'", self.ntfy_topic)
+                    logger.info(
+                        "Free push alert sent via ntfy.sh topic '%s'", self.ntfy_topic
+                    )
                     return True
             except Exception as exc:
                 logger.error("Error sending free ntfy.sh alert: %s", exc)

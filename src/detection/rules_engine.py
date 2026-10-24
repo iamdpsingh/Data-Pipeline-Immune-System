@@ -13,7 +13,7 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -25,17 +25,20 @@ class RuleClassification:
     confidence: float
     recommended_action: str
     severity: str  # P0, P1, P2, P3
-    evidence: List[str]
+    evidence: list[str]
 
 
 class DeterministicRulesEngine:
     """Evaluates telemetry payload against deterministic failure rules."""
 
-    def evaluate(self, context: Dict[str, Any]) -> Optional[RuleClassification]:
+    def evaluate(self, context: dict[str, Any]) -> RuleClassification | None:
         """Evaluates operational context against known deterministic failure signatures."""
 
         # 1. PII Exposure Boundary Check (P0)
-        if context.get("unexpected_pii_column") is True or context.get("schema_change_type") == "PII_EXPOSURE":
+        if (
+            context.get("unexpected_pii_column") is True
+            or context.get("schema_change_type") == "PII_EXPOSURE"
+        ):
             return RuleClassification(
                 matched_rule="pii_column_detected",
                 root_cause="PII_EXPOSURE_RISK",
@@ -100,7 +103,10 @@ class DeterministicRulesEngine:
             )
 
         # 5. Missing Partition
-        if context.get("partition_exists") is False and context.get("source_available") is True:
+        if (
+            context.get("partition_exists") is False
+            and context.get("source_available") is True
+        ):
             return RuleClassification(
                 matched_rule="missing_partition",
                 root_cause="MISSING_PARTITION",
@@ -115,7 +121,9 @@ class DeterministicRulesEngine:
         # 6. API Timeout / HTTP 5xx Gateway errors
         err_msg = str(context.get("error_message", ""))
         api_timeout_tokens = ["ReadTimeout", "ConnectionTimeout", "502", "503", "504"]
-        if context.get("task_status") == "FAILED" and any(t in err_msg for t in api_timeout_tokens):
+        if context.get("task_status") == "FAILED" and any(
+            t in err_msg for t in api_timeout_tokens
+        ):
             return RuleClassification(
                 matched_rule="api_timeout",
                 root_cause="API_TIMEOUT",
@@ -131,7 +139,11 @@ class DeterministicRulesEngine:
         err_type = context.get("error_type", "")
         retry_count = context.get("retry_count", 0)
         transient_types = ["TIMEOUT", "CONNECTION_RESET", "OUT_OF_MEMORY"]
-        if context.get("task_status") == "FAILED" and err_type in transient_types and retry_count < 3:
+        if (
+            context.get("task_status") == "FAILED"
+            and err_type in transient_types
+            and retry_count < 3
+        ):
             return RuleClassification(
                 matched_rule="transient_task_failure",
                 root_cause="TRANSIENT_TASK_FAILURE",
@@ -144,7 +156,10 @@ class DeterministicRulesEngine:
             )
 
         # 8. Freshness SLA Breach
-        if context.get("freshness_breach") is True and context.get("pipeline_running") is False:
+        if (
+            context.get("freshness_breach") is True
+            and context.get("pipeline_running") is False
+        ):
             return RuleClassification(
                 matched_rule="freshness_sla_breach",
                 root_cause="FRESHNESS_FAILURE",

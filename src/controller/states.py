@@ -14,7 +14,6 @@ States:
 from __future__ import annotations
 
 from enum import Enum
-from typing import Dict, Set
 
 
 class IncidentState(str, Enum):
@@ -31,7 +30,7 @@ class IncidentState(str, Enum):
 
 
 # Valid state transitions dictionary
-VALID_TRANSITIONS: Dict[IncidentState, Set[IncidentState]] = {
+VALID_TRANSITIONS: dict[IncidentState, set[IncidentState]] = {
     IncidentState.DETECTED: {IncidentState.CLASSIFIED, IncidentState.ESCALATED},
     IncidentState.CLASSIFIED: {IncidentState.DIAGNOSED, IncidentState.ESCALATED},
     IncidentState.DIAGNOSED: {IncidentState.RISK_ASSESSED, IncidentState.ESCALATED},
@@ -55,10 +54,13 @@ VALID_TRANSITIONS: Dict[IncidentState, Set[IncidentState]] = {
 
 class InvalidStateTransitionError(Exception):
     """Raised when an illegal transition is attempted in the incident state machine."""
+
     pass
 
 
-def transition(current_state: IncidentState, next_state: IncidentState) -> IncidentState:
+def transition(
+    current_state: IncidentState, next_state: IncidentState
+) -> IncidentState:
     """Validates and applies a state transition."""
     allowed = VALID_TRANSITIONS.get(current_state, set())
     if next_state not in allowed:

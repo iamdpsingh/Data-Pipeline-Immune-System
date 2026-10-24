@@ -13,9 +13,8 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass
-from typing import Any, Dict, List, Optional, Tuple
 
-from src.detection.statistics import StatisticalDetector, StatisticalSummary
+from src.detection.statistics import StatisticalDetector
 
 logger = logging.getLogger(__name__)
 
@@ -52,14 +51,18 @@ class AdaptiveBaseline:
     def evaluate_row_count(
         self,
         current_rows: int,
-        historical_row_counts: List[int],
+        historical_row_counts: list[int],
     ) -> BaselineEvaluation:
         """Evaluates whether current row volume is anomalous."""
         float_history = [float(x) for x in historical_row_counts]
         summary = self.detector.compute_summary(float_history)
 
         # Check if enough runs exist for statistical baseline
-        if summary and summary.count >= self.min_baseline_runs and summary.std_dev > 0.0:
+        if (
+            summary
+            and summary.count >= self.min_baseline_runs
+            and summary.std_dev > 0.0
+        ):
             is_anom, z_score = self.detector.is_zscore_anomaly(
                 float(current_rows), summary.mean, summary.std_dev
             )
@@ -78,7 +81,9 @@ class AdaptiveBaseline:
             )
 
         # Fallback to static percentage threshold
-        expected_ref = summary.mean if summary and summary.count > 0 else float(current_rows)
+        expected_ref = (
+            summary.mean if summary and summary.count > 0 else float(current_rows)
+        )
         ratio = (current_rows / expected_ref) if expected_ref > 0 else 1.0
 
         is_anom = ratio < self.static_lower_bound or ratio > self.static_upper_bound

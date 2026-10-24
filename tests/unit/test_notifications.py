@@ -1,7 +1,6 @@
 # ==============================================================================
 # Unit Tests — Notification Subsystem (Daily Reports & WhatsApp)
 # ==============================================================================
-import pytest
 
 from src.notifications.reporter import (
     DailyReportGenerator,

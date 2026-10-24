@@ -15,7 +15,6 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from enum import Enum
-from typing import Dict, Optional
 
 
 class HealthStatus(str, Enum):
@@ -27,20 +26,20 @@ class HealthStatus(str, Enum):
 
 @dataclass(frozen=True)
 class PipelineFactors:
-    reliability: float       # 0.0 - 1.0 (success rate)
-    freshness: float         # 0.0 - 1.0 (freshness SLA score)
-    quality: float           # 0.0 - 1.0 (quality checks pass rate)
+    reliability: float  # 0.0 - 1.0 (success rate)
+    freshness: float  # 0.0 - 1.0 (freshness SLA score)
+    quality: float  # 0.0 - 1.0 (quality checks pass rate)
     schema_stability: float  # 0.0 - 1.0 (1.0 = stable, decreases per breaking change)
-    sla_compliance: float    # 0.0 - 1.0 (duration SLA compliance)
+    sla_compliance: float  # 0.0 - 1.0 (duration SLA compliance)
 
 
 @dataclass(frozen=True)
 class HealthScoreResult:
     pipeline_id: str
-    composite_score: float   # 0.0 - 100.0
+    composite_score: float  # 0.0 - 100.0
     status: HealthStatus
     factors: PipelineFactors
-    weights: Dict[str, float]
+    weights: dict[str, float]
 
 
 class HealthScoreCalculator:
@@ -62,13 +61,15 @@ class HealthScoreCalculator:
 
     def __init__(
         self,
-        weights: Optional[Dict[str, float]] = None,
-        thresholds: Optional[Dict[str, int]] = None,
+        weights: dict[str, float] | None = None,
+        thresholds: dict[str, int] | None = None,
     ):
         self.weights = weights or self.DEFAULT_WEIGHTS
         self.thresholds = thresholds or self.DEFAULT_THRESHOLDS
 
-    def calculate(self, pipeline_id: str, factors: PipelineFactors) -> HealthScoreResult:
+    def calculate(
+        self, pipeline_id: str, factors: PipelineFactors
+    ) -> HealthScoreResult:
         """Computes composite score and health status tier."""
         score = (
             factors.reliability * self.weights.get("reliability", 0.30)

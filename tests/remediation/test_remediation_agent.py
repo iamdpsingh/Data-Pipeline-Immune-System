@@ -1,6 +1,7 @@
 """Unit tests for RemediationAgent and ActionLibrary."""
 
 import pytest
+
 from agents.remediation_agent import ApprovalRecord, RemediationAgent
 from agents.risk_agent import RiskAssessment, RiskLevel
 from src.remediation.exceptions import RemediationNotAuthorisedError
@@ -39,7 +40,9 @@ class TestRemediationAgent:
             assessed_at="2026-10-23T08:00:00Z",
         )
 
-        with pytest.raises(RemediationNotAuthorisedError, match="BLOCKED by never-allow policy"):
+        with pytest.raises(
+            RemediationNotAuthorisedError, match="BLOCKED by never-allow policy"
+        ):
             self.agent.remediate(risk)
 
     def test_high_risk_without_approval_raises_exception(self):
@@ -54,7 +57,9 @@ class TestRemediationAgent:
             assessed_at="2026-10-23T08:00:00Z",
         )
 
-        with pytest.raises(RemediationNotAuthorisedError, match="requires human approval"):
+        with pytest.raises(
+            RemediationNotAuthorisedError, match="requires human approval"
+        ):
             self.agent.remediate(risk, approval=None)
 
     def test_high_risk_with_approval_succeeds(self):

@@ -13,13 +13,14 @@ import logging
 import os
 import smtplib
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
-from typing import Any, Dict, Optional
+from typing import Any
 
 try:
     from dotenv import load_dotenv
+
     load_dotenv()
 except ImportError:
     pass
@@ -30,6 +31,7 @@ logger = logging.getLogger("dpis.notifications.reporter")
 @dataclass(frozen=True)
 class DailyReportMetrics:
     """Summary metrics representing 24-hour immune system activity."""
+
     report_date: str
     total_runs: int
     successful_runs: int
@@ -53,22 +55,22 @@ class DailyReportGenerator:
         self,
         project_id: str = "data-pipeline-immune-system",
         dataset: str = "dpis_dev",
-        bq_client: Optional[Any] = None,
+        bq_client: Any | None = None,
     ) -> DailyReportMetrics:
         """Queries BigQuery or generates fallback telemetry if offline."""
-        now_str = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+        now_str = datetime.now(UTC).strftime("%Y-%m-%d")
 
         if bq_client:
             try:
                 # Query BigQuery audit log and incidents for the last 24 hours
-                query = f"""
-                SELECT
-                  COUNT(DISTINCT run_id) AS total_runs,
-                  COUNTIF(status = 'SUCCESS') AS successful_runs,
-                  ROUND(SAFE_DIVIDE(COUNTIF(status = 'SUCCESS'), COUNT(DISTINCT run_id)) * 100, 1) AS success_rate
-                FROM `{project_id}.{dataset}.pipeline_runs`
-                WHERE execution_date >= DATE_SUB(CURRENT_DATE(), INTERVAL 1 DAY)
-                """
+                table_id = f"{project_id}.{dataset}.pipeline_runs"
+                query = (
+                    f"SELECT COUNT(DISTINCT run_id) AS total_runs, "  # nosec B608
+                    f"COUNTIF(status = 'SUCCESS') AS successful_runs, "
+                    f"ROUND(SAFE_DIVIDE(COUNTIF(status = 'SUCCESS'), COUNT(DISTINCT run_id)) * 100, 1) AS success_rate "
+                    f"FROM `{table_id}` "
+                    f"WHERE execution_date >= DATE_SUB(CURRENT_DATE(), INTERVAL 1 DAY)"
+                )
                 results = list(bq_client.query(query).result())
                 if results and results[0].total_runs > 0:
                     row = results[0]
@@ -86,7 +88,9 @@ class DailyReportGenerator:
                         environment=self.environment,
                     )
             except Exception as exc:
-                logger.warning("Could not query BigQuery metrics: %s. Using default rollup.", exc)
+                logger.warning(
+                    "Could not query BigQuery metrics: %s. Using default rollup.", exc
+                )
 
         # Default / simulated 24h operational state
         return DailyReportMetrics(
@@ -106,8 +110,16 @@ class DailyReportGenerator:
     def render_html_report(self, metrics: DailyReportMetrics) -> str:
         """Renders an executive, responsive HTML report for email clients."""
         cloud_run_url = os.getenv("CLOUD_RUN_URL", "https://dpis-api.internal")
-        health_color = "#2ea043" if metrics.overall_health_score >= 90 else "#d29922" if metrics.overall_health_score >= 75 else "#f85149"
-        health_label = "NOMINAL" if metrics.overall_health_score >= 90 else "DEGRADED" if metrics.overall_health_score >= 75 else "CRITICAL"
+        health_color = (
+            "#2ea043"
+            if metrics.overall_health_score >= 90
+            else "#d29922" if metrics.overall_health_score >= 75 else "#f85149"
+        )
+        health_label = (
+            "NOMINAL"
+            if metrics.overall_health_score >= 90
+            else "DEGRADED" if metrics.overall_health_score >= 75 else "CRITICAL"
+        )
 
         return f"""<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml">
@@ -122,7 +134,7 @@ class DailyReportGenerator:
       <td align="center">
         <!-- Main Industrial Container -->
         <table border="0" cellpadding="0" cellspacing="0" width="100%" style="max-width: 720px; background-color: #161b22; border: 1px solid #30363d; border-radius: 6px; overflow: hidden;">
-          
+
           <!-- Industrial Header Block -->
           <tr>
             <td style="background-color: #0d1117; padding: 20px 24px; border-bottom: 2px solid #30363d;">
@@ -290,11 +302,11 @@ class EmailDispatcher:
 
     def __init__(
         self,
-        smtp_host: Optional[str] = None,
-        smtp_port: Optional[int] = None,
-        smtp_user: Optional[str] = None,
-        smtp_password: Optional[str] = None,
-        sender: Optional[str] = None,
+        smtp_host: str | None = None,
+        smtp_port: int | None = None,
+        smtp_user: str | None = None,
+        smtp_password: str | None = None,
+        sender: str | None = None,
     ):
         self.smtp_host = smtp_host or os.getenv("SMTP_HOST")
         self.smtp_port = smtp_port or int(os.getenv("SMTP_PORT", "587"))
@@ -302,13 +314,18 @@ class EmailDispatcher:
         raw_pwd = smtp_password or os.getenv("SMTP_PASSWORD")
         self.smtp_password = raw_pwd.replace(" ", "").strip() if raw_pwd else None
         # Sanitize sender: If using Gmail SMTP, From must match authenticated user
-        self.sender = sender or os.getenv("SMTP_SENDER") or self.smtp_user or "alerts@data-pipeline-immune-system.internal"
+        self.sender = (
+            sender
+            or os.getenv("SMTP_SENDER")
+            or self.smtp_user
+            or "alerts@data-pipeline-immune-system.internal"
+        )
 
     def send_daily_report(
         self,
         recipient: str,
         metrics: DailyReportMetrics,
-        generator: Optional[DailyReportGenerator] = None,
+        generator: DailyReportGenerator | None = None,
     ) -> bool:
         """Sends the compiled daily report to the recipient address."""
         gen = generator or DailyReportGenerator(environment=metrics.environment)

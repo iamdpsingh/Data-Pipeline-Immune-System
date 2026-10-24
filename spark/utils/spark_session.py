@@ -11,7 +11,6 @@ from __future__ import annotations
 
 import logging
 import os
-from typing import Optional
 
 from pyspark.sql import SparkSession
 
@@ -20,7 +19,7 @@ logger = logging.getLogger(__name__)
 
 def get_spark_session(
     app_name: str = "DataPipelineImmuneSystem",
-    master: Optional[str] = None,
+    master: str | None = None,
     enable_bigquery: bool = True,
 ) -> SparkSession:
     """Builds and returns a configured PySpark session.
@@ -47,12 +46,13 @@ def get_spark_session(
 
     if enable_bigquery:
         # BigQuery connector configuration
-        builder = builder.config(
-            "viewsEnabled", "true"
-        ).config(
-            "materializationDataset", os.getenv("BQ_MATERIALIZATION_DATASET", "dpis_dev")
+        builder = builder.config("viewsEnabled", "true").config(
+            "materializationDataset",
+            os.getenv("BQ_MATERIALIZATION_DATASET", "dpis_dev"),
         )
 
     spark = builder.getOrCreate()
-    logger.info("Initialized SparkSession: %s (master: %s)", app_name, spark.sparkContext.master)
+    logger.info(
+        "Initialized SparkSession: %s (master: %s)", app_name, spark.sparkContext.master
+    )
     return spark

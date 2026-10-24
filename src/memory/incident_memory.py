@@ -13,8 +13,8 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass
-from datetime import datetime, timezone
-from typing import Any, Dict, List, Optional
+from datetime import UTC, datetime
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -24,7 +24,7 @@ class HistoricalIncident:
     incident_id: str
     pipeline_id: str
     incident_type: str
-    symptoms: List[str]
+    symptoms: list[str]
     root_cause: str
     resolution_action: str
     outcome: str  # SUCCESS, FAILED
@@ -34,17 +34,17 @@ class HistoricalIncident:
 class IncidentMemory:
     """Manages historical incident storage and contextual similarity matching."""
 
-    def __init__(self, dataset: str = "dpis_dev", bq_client: Optional[Any] = None):
+    def __init__(self, dataset: str = "dpis_dev", bq_client: Any | None = None):
         self.dataset = dataset
         self.bq_client = bq_client
-        self._memory_cache: List[HistoricalIncident] = []
+        self._memory_cache: list[HistoricalIncident] = []
 
     def record_resolution(
         self,
         incident_id: str,
         pipeline_id: str,
         incident_type: str,
-        symptoms: List[str],
+        symptoms: list[str],
         root_cause: str,
         resolution_action: str,
         outcome: str = "SUCCESS",
@@ -58,7 +58,7 @@ class IncidentMemory:
             root_cause=root_cause,
             resolution_action=resolution_action,
             outcome=outcome,
-            resolved_at=datetime.now(timezone.utc),
+            resolved_at=datetime.now(UTC),
         )
         self._memory_cache.append(record)
         logger.info(
@@ -74,11 +74,11 @@ class IncidentMemory:
         self,
         pipeline_id: str,
         incident_type: str,
-        symptoms: List[str],
+        symptoms: list[str],
         limit: int = 3,
-    ) -> List[HistoricalIncident]:
+    ) -> list[HistoricalIncident]:
         """Finds most relevant historical incidents matching symptoms."""
-        scored: List[tuple[float, HistoricalIncident]] = []
+        scored: list[tuple[float, HistoricalIncident]] = []
 
         query_tokens = set(
             [s.lower() for s in symptoms] + [pipeline_id.lower(), incident_type.lower()]
@@ -91,7 +91,9 @@ class IncidentMemory:
             if item.incident_type.lower() == incident_type.lower():
                 score += 3.0
 
-            item_tokens = set([s.lower() for s in item.symptoms] + [item.root_cause.lower()])
+            item_tokens = set(
+                [s.lower() for s in item.symptoms] + [item.root_cause.lower()]
+            )
             overlap = query_tokens & item_tokens
             score += len(overlap) * 1.5
 

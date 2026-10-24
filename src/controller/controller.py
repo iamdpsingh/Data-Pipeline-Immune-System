@@ -12,8 +12,7 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass
-from datetime import datetime, timezone
-from typing import Any, Dict, Optional
+from typing import Any
 
 from agents.detection_agent import DetectionAgent, DetectionInput, DetectionResult
 from agents.diagnosis_agent import DiagnosisAgent, DiagnosisInput, DiagnosisResult
@@ -30,15 +29,15 @@ logger = logging.getLogger(__name__)
 
 @dataclass(frozen=True)
 class IncidentLifecycleResult:
-    incident_id: Optional[str]
+    incident_id: str | None
     pipeline_id: str
     run_id: str
     final_state: IncidentState
-    detection: Optional[DetectionResult]
-    diagnosis: Optional[DiagnosisResult]
-    risk: Optional[RiskAssessment]
-    remediation: Optional[RemediationResult]
-    verification: Optional[VerificationResult]
+    detection: DetectionResult | None
+    diagnosis: DiagnosisResult | None
+    risk: RiskAssessment | None
+    remediation: RemediationResult | None
+    verification: VerificationResult | None
     message: str
 
 
@@ -47,19 +46,20 @@ class ImmuneSystemController:
 
     def __init__(
         self,
-        settings: Optional[Settings] = None,
-        audit_logger: Optional[AuditLogger] = None,
-        detection_agent: Optional[DetectionAgent] = None,
-        diagnosis_agent: Optional[DiagnosisAgent] = None,
-        risk_agent: Optional[RiskAgent] = None,
-        remediation_agent: Optional[RemediationAgent] = None,
-        verification_agent: Optional[VerificationAgent] = None,
-        learning_agent: Optional[LearningAgent] = None,
+        settings: Settings | None = None,
+        audit_logger: AuditLogger | None = None,
+        detection_agent: DetectionAgent | None = None,
+        diagnosis_agent: DiagnosisAgent | None = None,
+        risk_agent: RiskAgent | None = None,
+        remediation_agent: RemediationAgent | None = None,
+        verification_agent: VerificationAgent | None = None,
+        learning_agent: LearningAgent | None = None,
     ):
         self.settings = settings or load_settings()
         bq_client = None
         try:
             from google.cloud import bigquery
+
             bq_client = bigquery.Client(project=self.settings.project.id)
         except Exception:
             bq_client = None
@@ -78,19 +78,27 @@ class ImmuneSystemController:
         self,
         pipeline_id: str,
         run_id: str,
-        context: Optional[Dict[str, Any]] = None,
-        approval: Optional[ApprovalRecord] = None,
+        context: dict[str, Any] | None = None,
+        approval: ApprovalRecord | None = None,
     ) -> IncidentLifecycleResult:
         """Main entrypoint executed on pipeline run completion."""
         ctx = context or {}
-        logger.info("Immune controller evaluating completion for %s (run %s)", pipeline_id, run_id)
+        logger.info(
+            "Immune controller evaluating completion for %s (run %s)",
+            pipeline_id,
+            run_id,
+        )
 
         # 1. Detection Phase
         det_input = DetectionInput(pipeline_id=pipeline_id, run_id=run_id, context=ctx)
         det_res = self.detection.detect(det_input)
 
         if not det_res.is_anomaly or not det_res.incident_id:
-            logger.info("Pipeline %s run %s completed cleanly. No incident created.", pipeline_id, run_id)
+            logger.info(
+                "Pipeline %s run %s completed cleanly. No incident created.",
+                pipeline_id,
+                run_id,
+            )
             return IncidentLifecycleResult(
                 incident_id=None,
                 pipeline_id=pipeline_id,
@@ -142,7 +150,10 @@ class ImmuneSystemController:
             run_id=run_id,
             agent_name="RiskAgent",
             action_type="RISK_ASSESSED",
-            details={"level": risk_res.risk_level.value, "auto": risk_res.auto_remediable},
+            details={
+                "level": risk_res.risk_level.value,
+                "auto": risk_res.auto_remediable,
+            },
             incident_id=incident_id,
         )
 

@@ -14,7 +14,7 @@ from __future__ import annotations
 
 import argparse
 import logging
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from pyspark.sql import functions as F
 from pyspark.sql.types import TimestampType
@@ -34,7 +34,9 @@ def run_gold_aggregation(
     """Computes daily KPI metrics from Silver orders table."""
     spark = get_spark_session(app_name=f"GoldAggregate-Orders-{target_date}")
 
-    logger.info("Reading silver orders for date %s from: %s", target_date, silver_source)
+    logger.info(
+        "Reading silver orders for date %s from: %s", target_date, silver_source
+    )
     if write_format == "bigquery":
         silver_df = spark.read.format("bigquery").option("table", silver_source).load()
     else:
@@ -55,7 +57,9 @@ def run_gold_aggregation(
             ).alias("cancelled_orders"),
             F.round(
                 F.sum(
-                    F.when(F.col("status") == "COMPLETED", F.col("total_amount_usd")).otherwise(0.0)
+                    F.when(
+                        F.col("status") == "COMPLETED", F.col("total_amount_usd")
+                    ).otherwise(0.0)
                 ),
                 2,
             ).alias("gross_revenue_usd"),
@@ -71,7 +75,7 @@ def run_gold_aggregation(
         .withColumnRenamed("order_date_partition", "order_date")
         .withColumn(
             "_aggregated_at",
-            F.lit(datetime.now(timezone.utc).isoformat()).cast(TimestampType()),
+            F.lit(datetime.now(UTC).isoformat()).cast(TimestampType()),
         )
         .withColumn("_run_id", F.lit(run_id))
     )
@@ -80,7 +84,9 @@ def run_gold_aggregation(
     logger.info("Generated %d gold aggregate rows for date %s", row_count, target_date)
 
     if write_format == "bigquery":
-        gold_df.write.format("bigquery").option("table", gold_target).mode("append").save()
+        gold_df.write.format("bigquery").option("table", gold_target).mode(
+            "append"
+        ).save()
     else:
         gold_df.write.mode("append").partitionBy("order_date").parquet(gold_target)
 
@@ -91,13 +97,17 @@ def main() -> None:
     parser = argparse.ArgumentParser(description="Gold daily orders aggregation job.")
     parser.add_argument("--silver-source", required=True)
     parser.add_argument("--gold-target", required=True)
-    parser.add_argument("--date", required=True, help="Target partition date (YYYY-MM-DD)")
+    parser.add_argument(
+        "--date", required=True, help="Target partition date (YYYY-MM-DD)"
+    )
     parser.add_argument("--run-id", required=True)
     parser.add_argument("--format", default="parquet", choices=["parquet", "bigquery"])
     args = parser.parse_args()
 
     logging.basicConfig(level=logging.INFO)
-    run_gold_aggregation(args.silver_source, args.gold_target, args.date, args.run_id, args.format)
+    run_gold_aggregation(
+        args.silver_source, args.gold_target, args.date, args.run_id, args.format
+    )
 
 
 if __name__ == "__main__":

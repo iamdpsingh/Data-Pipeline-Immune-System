@@ -8,7 +8,6 @@ Pipeline: Bronze Raw -> Silver Conformed (with ADR-008 Quarantine) -> Gold Analy
 
 from __future__ import annotations
 
-import os
 from datetime import datetime, timedelta
 from typing import Any
 
@@ -29,7 +28,9 @@ default_args = {
 def log_quarantine_stats(**context: Any) -> None:
     """Logs quarantine stats to the immune control plane."""
     run_id = context["run_id"]
-    print(f"[Immune Monitor] Monitored run {run_id} for quarantine partition spillover.")
+    print(
+        f"[Immune Monitor] Monitored run {run_id} for quarantine partition spillover."
+    )
 
 
 with DAG(

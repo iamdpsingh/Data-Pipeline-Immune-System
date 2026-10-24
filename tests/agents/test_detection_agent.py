@@ -1,6 +1,5 @@
 """Unit tests for DetectionAgent, DeterministicRulesEngine, and AdaptiveBaseline."""
 
-import pytest
 from agents.detection_agent import DetectionAgent, DetectionInput
 from src.config.settings import load_settings
 

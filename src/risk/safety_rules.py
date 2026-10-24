@@ -15,7 +15,6 @@ from __future__ import annotations
 import logging
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Dict, List, Optional
 
 import yaml
 
@@ -36,19 +35,24 @@ class ActionPolicy:
 class SafetyRulesLoader:
     """Loads and indexes safety policies from safety_rules.yaml."""
 
-    def __init__(self, yaml_path: Optional[Path | str] = None):
-        self.yaml_path = Path(yaml_path) if yaml_path else Path("rules/safety_rules.yaml").resolve()
-        self.policies: Dict[str, ActionPolicy] = {}
+    def __init__(self, yaml_path: Path | str | None = None):
+        self.yaml_path = (
+            Path(yaml_path) if yaml_path else Path("rules/safety_rules.yaml").resolve()
+        )
+        self.policies: dict[str, ActionPolicy] = {}
         self._load_rules()
 
     def _load_rules(self) -> None:
         """Parses safety rules and enforces code boundary synchronization."""
         if not self.yaml_path.exists():
-            logger.warning("Safety rules file not found at %s. Using default safety set.", self.yaml_path)
+            logger.warning(
+                "Safety rules file not found at %s. Using default safety set.",
+                self.yaml_path,
+            )
             self._init_defaults()
             return
 
-        with open(self.yaml_path, "r", encoding="utf-8") as f:
+        with open(self.yaml_path, encoding="utf-8") as f:
             data = yaml.safe_load(f) or {}
 
         # 1. Never allow

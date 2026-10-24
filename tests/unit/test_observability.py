@@ -1,6 +1,5 @@
 """Unit tests for pipeline health score calculator and structured audit logger."""
 
-import pytest
 from src.observability.audit_logger import AuditLogger
 from src.observability.health_score import (
     HealthScoreCalculator,

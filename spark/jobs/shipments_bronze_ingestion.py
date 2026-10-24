@@ -1,15 +1,21 @@
 # PySpark Ingestion Job: Carrier Shipments -> Bronze Raw Landing
 from pyspark.sql import SparkSession
-from pyspark.sql.functions import current_timestamp, to_json, struct
+from pyspark.sql.functions import current_timestamp, struct, to_json
+
 
 def ingest_shipments_bronze(spark: SparkSession, source_path: str, bronze_path: str):
     df_raw = spark.read.json(source_path)
     df_bronze = df_raw.select(
         to_json(struct("*")).alias("_raw_payload"),
-        current_timestamp().alias("_ingested_at")
+        current_timestamp().alias("_ingested_at"),
     )
     df_bronze.write.mode("append").parquet(bronze_path)
 
+
 if __name__ == "__main__":
     spark = SparkSession.builder.appName("ShipmentsBronzeIngestion").getOrCreate()
-    ingest_shipments_bronze(spark, "gs://dpis-source-data-pipeline-immune-system/shipments/", "gs://dpis-bronze-data-pipeline-immune-system/shipments/")
+    ingest_shipments_bronze(
+        spark,
+        "gs://dpis-source-data-pipeline-immune-system/shipments/",
+        "gs://dpis-bronze-data-pipeline-immune-system/shipments/",
+    )

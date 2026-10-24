@@ -18,8 +18,8 @@ from __future__ import annotations
 import logging
 import uuid
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
-from typing import Any, Dict, List, Optional
+from datetime import UTC, datetime
+from typing import Any
 
 from src.config.settings import Settings, load_settings
 from src.detection.baseline import AdaptiveBaseline
@@ -33,21 +33,21 @@ logger = logging.getLogger(__name__)
 class DetectionInput:
     pipeline_id: str
     run_id: str
-    context: Dict[str, Any] = field(default_factory=dict)
+    context: dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass(frozen=True)
 class DetectionResult:
-    incident_id: Optional[str]
-    anomaly_type: Optional[str]
-    severity: Optional[str]
+    incident_id: str | None
+    anomaly_type: str | None
+    severity: str | None
     confidence: float
-    evidence: List[str]
+    evidence: list[str]
     pipeline_id: str
     run_id: str
     detected_at: str
     is_anomaly: bool
-    recommended_action: Optional[str] = None
+    recommended_action: str | None = None
 
 
 class DetectionAgent:
@@ -55,8 +55,8 @@ class DetectionAgent:
 
     def __init__(
         self,
-        settings: Optional[Settings] = None,
-        bq_client: Optional[Any] = None,
+        settings: Settings | None = None,
+        bq_client: Any | None = None,
     ):
         self.settings = settings or load_settings()
         self.bq = bq_client
@@ -72,7 +72,7 @@ class DetectionAgent:
 
     def detect(self, input_data: DetectionInput) -> DetectionResult:
         """Runs all detection checks for a completed pipeline run."""
-        now_str = datetime.now(timezone.utc).isoformat()
+        now_str = datetime.now(UTC).isoformat()
         ctx = input_data.context
 
         logger.info(
@@ -82,7 +82,7 @@ class DetectionAgent:
         )
 
         # 1. Evaluate deterministic failure rules (ADR-003)
-        rule_match: Optional[RuleClassification] = self.rules_engine.evaluate(ctx)
+        rule_match: RuleClassification | None = self.rules_engine.evaluate(ctx)
         if rule_match:
             incident_id = f"inc-{uuid.uuid4().hex[:12]}"
             logger.warning(
@@ -124,14 +124,20 @@ class DetectionAgent:
                     run_id=input_data.run_id,
                     detected_at=now_str,
                     is_anomaly=True,
-                    recommended_action="RETRY_SOURCE_EXTRACTION" if severity == "P1" else "INVESTIGATE_VOLUME_SPIKE",
+                    recommended_action=(
+                        "RETRY_SOURCE_EXTRACTION"
+                        if severity == "P1"
+                        else "INVESTIGATE_VOLUME_SPIKE"
+                    ),
                 )
 
         # 3. Data quality check failure evaluation
         failed_checks = ctx.get("failed_quality_checks", [])
         if failed_checks:
             incident_id = f"inc-{uuid.uuid4().hex[:12]}"
-            worst_severity = "P1" if any(c.get("severity") == "P1" for c in failed_checks) else "P2"
+            worst_severity = (
+                "P1" if any(c.get("severity") == "P1" for c in failed_checks) else "P2"
+            )
             evidence = [
                 f"Check '{c.get('check_name')}' failed (actual {c.get('actual_value')} > threshold {c.get('threshold')})"
                 for c in failed_checks

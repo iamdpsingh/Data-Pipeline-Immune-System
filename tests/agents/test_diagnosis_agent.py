@@ -1,6 +1,5 @@
 """Unit tests for DiagnosisAgent and IncidentMemory."""
 
-import pytest
 from agents.detection_agent import DetectionResult
 from agents.diagnosis_agent import DiagnosisAgent, DiagnosisInput
 from src.memory.incident_memory import IncidentMemory
@@ -51,7 +50,9 @@ class TestDiagnosisAgent:
             anomaly_type="ROW_COUNT_ANOMALY",
             severity="P1",
             confidence=0.60,  # Below 0.90 threshold
-            evidence=["Observed 500 rows vs historical mean 1000 with sudden z-score drop."],
+            evidence=[
+                "Observed 500 rows vs historical mean 1000 with sudden z-score drop."
+            ],
             pipeline_id="orders",
             run_id="run-102",
             detected_at="2026-10-23T08:00:00Z",

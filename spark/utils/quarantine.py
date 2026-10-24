@@ -15,8 +15,7 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass
-from datetime import datetime, timezone
-from typing import Callable, List, Tuple
+from datetime import UTC, datetime
 
 from pyspark.sql import Column, DataFrame
 from pyspark.sql import functions as F
@@ -38,7 +37,7 @@ class QuarantineRouter:
         self,
         pipeline_id: str,
         run_id: str,
-        rules: List[QualityRule],
+        rules: list[QualityRule],
         max_quarantine_pct: float = 0.05,
     ):
         self.pipeline_id = pipeline_id
@@ -46,20 +45,22 @@ class QuarantineRouter:
         self.rules = rules
         self.max_quarantine_pct = max_quarantine_pct
 
-    def route(self, df: DataFrame) -> Tuple[DataFrame, DataFrame, float]:
+    def route(self, df: DataFrame) -> tuple[DataFrame, DataFrame, float]:
         """Splits DataFrame into valid and quarantined partitions.
 
         Returns:
             Tuple of (valid_df, quarantined_df, quarantine_ratio)
         """
         if not self.rules:
-            empty_quarantine = df.filter(F.lit(False)).withColumn(
-                "_failure_reason", F.lit("")
-            ).withColumn("_rule_name", F.lit("")).withColumn(
-                "_raw_record", F.lit("")
-            ).withColumn("_pipeline_id", F.lit(self.pipeline_id)).withColumn(
-                "_run_id", F.lit(self.run_id)
-            ).withColumn("_quarantined_at", F.current_timestamp())
+            empty_quarantine = (
+                df.filter(F.lit(False))
+                .withColumn("_failure_reason", F.lit(""))
+                .withColumn("_rule_name", F.lit(""))
+                .withColumn("_raw_record", F.lit(""))
+                .withColumn("_pipeline_id", F.lit(self.pipeline_id))
+                .withColumn("_run_id", F.lit(self.run_id))
+                .withColumn("_quarantined_at", F.current_timestamp())
+            )
             return df, empty_quarantine, 0.0
 
         # Build condition that identifies invalid rows for each rule
@@ -71,7 +72,10 @@ class QuarantineRouter:
         for rule in self.rules:
             reasons_col = F.when(
                 ~rule.condition,
-                F.array_union(reasons_col, F.array(F.lit(f"{rule.rule_name}: {rule.failure_reason}"))),
+                F.array_union(
+                    reasons_col,
+                    F.array(F.lit(f"{rule.rule_name}: {rule.failure_reason}")),
+                ),
             ).otherwise(reasons_col)
 
         evaluated_df = evaluated_df.withColumn("_failures", reasons_col)
@@ -88,7 +92,7 @@ class QuarantineRouter:
             .withColumn("_run_id", F.lit(self.run_id))
             .withColumn(
                 "_quarantined_at",
-                F.lit(datetime.now(timezone.utc).isoformat()).cast("timestamp"),
+                F.lit(datetime.now(UTC).isoformat()).cast("timestamp"),
             )
             .drop("_failures")
         )

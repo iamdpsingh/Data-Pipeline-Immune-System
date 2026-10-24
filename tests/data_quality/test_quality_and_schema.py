@@ -1,6 +1,5 @@
 """Unit tests for Data Quality and Schema Drift validation engines."""
 
-import pytest
 from src.validation.quality_engine import CheckStatus, CheckType, DataQualityValidator
 from src.validation.schema_drift import (
     ColumnDef,
