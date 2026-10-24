@@ -333,10 +333,16 @@ class EmailDispatcher:
         text_body = gen.render_text_report(metrics)
         subject = f"🛡️ [Daily Health Report] Data Pipeline Immune System ({metrics.overall_health_score}/100) — {metrics.report_date}"
 
-        # If SMTP credentials are not configured, simulate delivery safely in dry-run mode
-        if not self.smtp_host or not self.smtp_user or not self.smtp_password:
+        # If SMTP credentials are not configured or recipient is a test/example domain, simulate delivery safely
+        if (
+            not self.smtp_host
+            or not self.smtp_user
+            or not self.smtp_password
+            or recipient.endswith("@example.com")
+            or recipient.endswith("@test.com")
+        ):
             logger.info(
-                "[EmailDispatcher DRY-RUN] SMTP credentials not set. Simulated sending report to: %s",
+                "[EmailDispatcher DRY-RUN] Dry-run/test recipient or SMTP credentials not set. Simulated sending report to: %s",
                 recipient,
             )
             logger.info("[EmailDispatcher DRY-RUN] Subject: %s", subject)

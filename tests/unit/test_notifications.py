@@ -2,6 +2,8 @@
 # Unit Tests — Notification Subsystem (Daily Reports & WhatsApp)
 # ==============================================================================
 
+from unittest.mock import MagicMock, patch
+
 from src.notifications.reporter import (
     DailyReportGenerator,
     DailyReportMetrics,
@@ -34,7 +36,11 @@ class TestDailyReportGenerator:
         assert "DATA PIPELINE IMMUNE SYSTEM — DAILY REPORT" in text
         assert "Health Score:" in text
 
-    def test_email_dispatcher_dry_run(self):
+    @patch("smtplib.SMTP")
+    def test_email_dispatcher_dry_run(self, mock_smtp):
+        mock_server = MagicMock()
+        mock_smtp.return_value.__enter__.return_value = mock_server
+
         dispatcher = EmailDispatcher()
         generator = DailyReportGenerator(environment="dev")
         metrics = generator.collect_metrics()
@@ -58,7 +64,9 @@ class TestWhatsAppAlertDispatcher:
         assert "Hourly Pulse" in msg
         assert "HEALTHY (98.5/100)" in msg
 
-    def test_send_hourly_alert_dry_run(self):
+    @patch("requests.post")
+    def test_send_hourly_alert_dry_run(self, mock_post):
+        mock_post.return_value.status_code = 200
         dispatcher = WhatsAppAlertDispatcher()
         result = dispatcher.send_hourly_alert(
             recipient_phone="+1234567890",
