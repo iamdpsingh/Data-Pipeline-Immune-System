@@ -9,26 +9,39 @@ jobs:
     name: Deploy immune service to staging
     runs-on: ubuntu-latest
     environment: staging
-    if: ${{ secrets.GCP_STAGING_SA_KEY != '' }}
 
     steps:
       - uses: actions/checkout@v4
 
+      - name: Validate GCP Credentials Presence
+        id: check_auth
+        run: |
+          if [ -z "${{ secrets.GCP_STAGING_SA_KEY }}" ]; then
+            echo "has_sa_key=false" >> "$GITHUB_OUTPUT"
+            echo "GCP_STAGING_SA_KEY is not defined in repository secrets. Skipping staging deployment."
+          else
+            echo "has_sa_key=true" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Authenticate to GCP
+        if: steps.check_auth.outputs.has_sa_key == 'true'
         uses: google-github-actions/auth@v2
         with:
           credentials_json: ${{ secrets.GCP_STAGING_SA_KEY }}
 
       - name: Set up Cloud SDK
+        if: steps.check_auth.outputs.has_sa_key == 'true'
         uses: google-github-actions/setup-gcloud@v2
 
       - name: Build and push container
+        if: steps.check_auth.outputs.has_sa_key == 'true'
         run: |
           gcloud auth configure-docker gcr.io
           docker build -t gcr.io/${{ vars.GCP_STAGING_PROJECT }}/immune-service:${{ github.sha }} .
           docker push gcr.io/${{ vars.GCP_STAGING_PROJECT }}/immune-service:${{ github.sha }}
 
       - name: Deploy to Cloud Run (staging)
+        if: steps.check_auth.outputs.has_sa_key == 'true'
         run: |
           gcloud run deploy immune-service \
             --image gcr.io/${{ vars.GCP_STAGING_PROJECT }}/immune-service:${{ github.sha }} \
@@ -38,10 +51,12 @@ jobs:
             --set-env-vars ENVIRONMENT=staging
 
       - name: Sync Airflow DAGs
+        if: steps.check_auth.outputs.has_sa_key == 'true'
         run: |
           gsutil -m rsync -r dags/ gs://${{ vars.STAGING_AIRFLOW_BUCKET }}/dags/
 
       - name: Run smoke tests
+        if: steps.check_auth.outputs.has_sa_key == 'true'
         run: |
           pip install -r requirements.txt
           python scripts/smoke_test.py --environment staging
