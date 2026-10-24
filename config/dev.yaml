@@ -13,9 +13,9 @@ project:
   location: us-central1
 
 gcs:
-  source_bucket: dpis-dev-source
-  bronze_bucket: dpis-dev-bronze
-  quarantine_bucket: dpis-dev-quarantine
+  source_bucket: dpis-source-data-pipeline-immune-system
+  bronze_bucket: dpis-bronze-data-pipeline-immune-system
+  quarantine_bucket: dpis-quarantine-data-pipeline-immune-system
 
 detection:
   # z-score threshold for row count anomaly. Lower in dev to trigger more easily
