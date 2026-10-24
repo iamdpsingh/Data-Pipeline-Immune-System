@@ -1,0 +1,8 @@
+# Production Environment Safety Threshold Overrides
+environment: production
+overrides:
+  zscore_threshold: 3.0
+  quarantine_sample_pct: 5
+  failure_injection_enabled: false
+  min_audit_buffer_size: 50
+  strict_never_allow_enforcement: true
