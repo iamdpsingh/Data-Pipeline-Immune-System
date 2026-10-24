@@ -1,8 +1,8 @@
-# Junior & Intern Developer Guide — Data Pipeline Immune System
+# Platform Engineering & Architecture Guide — Data Pipeline Immune System
 
-Welcome to the **Data Pipeline Immune System**! This guide was written specifically for junior developers, interns, and engineers new to autonomous data reliability engineering. 
+Welcome to the **Data Pipeline Immune System**! This comprehensive guide provides an end-to-end technical reference for platform engineers, data reliability engineers, and developers working on autonomous data reliability systems.
 
-By the end of this guide, you will understand:
+By reading this guide, you will understand:
 1. What problem this system solves and why autonomous self-healing is necessary.
 2. Every Google Cloud Platform (GCP) service used and why it was chosen.
 3. The algorithms, data architectures, and safety patterns powering the platform.
@@ -14,7 +14,7 @@ By the end of this guide, you will understand:
 
 In enterprise data platforms, pipelines fail constantly:
 - An upstream vendor API times out for 10 seconds.
-- A mobile app releases an update that introduces a new column or nulls out a user ID.
+- A mobile app releases an update that introduces an unexpected column or nulls out a user ID.
 - An executor runs out of memory during a heavy batch.
 
 ### The Old Way (Manual On-Call):
@@ -25,20 +25,20 @@ In enterprise data platforms, pipelines fail constantly:
 5. 45 minutes of downtime have passed, and downstream business dashboards were stale.
 
 ### The Immune System Way (Autonomous Self-Healing):
-Just like the human immune system uses antibodies and white blood cells to neutralize pathogens without you having to consciously think about it:
+Just like the human immune system uses antibodies and white blood cells to neutralize pathogens without manual intervention:
 1. **Detection Agent** catches the failure or statistical anomaly within milliseconds.
 2. **Diagnosis Agent** evaluates deterministic rules first; if known, classifies the exact root cause.
 3. **Risk Agent** checks strict safety boundaries (Never-Allow invariants).
 4. **Remediation Agent** executes an idempotent fix (e.g. restarts the failed task with backoff or routes corrupted records into quarantine).
 5. **Verification Agent** re-runs data quality checks on the database to prove the output is 100% correct.
 6. **Learning Agent** records the resolution into BigQuery incident memory.
-7. Total resolution time: **< 1 minute (MTTR: 0.7m)**. The human is not woken up, and data consumers never see corrupted numbers.
+7. Total resolution time: **< 1 minute (MTTR: 0.7m)**. Engineers are not woken up, and data consumers never see corrupted numbers.
 
 ---
 
 ## 2. Google Cloud Platform (GCP) Services & Technology Stack
 
-The entire system runs on Google Cloud Platform under project **`data-pipeline-immune-system`**. Here is every service we use and the role it plays:
+The system is designed for Google Cloud Platform. Here is every service utilized and the architectural role it plays:
 
 ```
 [Cloud Build] ➔ Compiles Dockerfile ➔ Stores in [Artifact Registry]
@@ -55,9 +55,9 @@ The entire system runs on Google Cloud Platform under project **`data-pipeline-i
 
 | GCP Service | What It Does In This Project | Why We Chose It |
 |---|---|---|
-| **Google Cloud Run** | Hosts our serverless controller API (`dpis-dev-api`). It receives Airflow webhooks, orchestrates the 6 specialized agents, and serves the dashboard API. | Stateless, scales to zero when idle (`min_instances = 0` in dev to save money), deploys containers in seconds without Kubernetes cluster overhead. |
+| **Google Cloud Run** | Hosts our serverless controller API (`dpis-dev-api`). It receives Airflow webhooks, orchestrates the 6 specialized agents, and serves the dashboard API. | Stateless, scales to zero when idle (`min_instances = 0` in dev to minimize cost), deploys containers in seconds without Kubernetes cluster overhead. |
 | **Google Cloud BigQuery** | Acts as our Lakehouse warehouse and incident store (`dpis_dev`, `dpis_silver_dev`, `dpis_gold_dev`, `dpis_audit`). | Native JSON column support, date partitioning, automatic clustering, and schema-drift inspection capabilities. |
-| **Google Cloud Storage (GCS)** | Object storage for raw source payloads and dead-letter quarantine (`gs://dpis-source-data-pipeline-immune-system`, `gs://dpis-quarantine-...`). | High-throughput immutable landing, automatic lifecycle rules (e.g. delete after 90 days), and seamless integration with PySpark. |
+| **Google Cloud Storage (GCS)** | Object storage for raw source payloads and dead-letter quarantine (`gs://dpis-source-...`, `gs://dpis-quarantine-...`). | High-throughput immutable landing, automatic lifecycle rules (e.g. delete after 90 days), and seamless integration with PySpark. |
 | **Google Cloud Build** | Builds the production container image from `Dockerfile` directly on GCP compute without requiring local Docker. | Fast cloud compilation, zero local resource drain, and direct push rights into Artifact Registry. |
 | **Google Artifact Registry** | Docker OCI container image repository (`dpis-repo` in `us-central1`). | Modern, secure replacement for Google Container Registry (GCR) with granular IAM access controls. |
 | **Google Secret Manager** | Securely stores sensitive tokens: Slack webhooks, SMTP credentials, and WhatsApp API keys. | Zero secrets in git. Credentials are injected at runtime via Workload Identity rather than hardcoded `.env` files. |
@@ -105,10 +105,10 @@ When 25 corrupt records with negative prices arrive in a 100,000-row batch, you 
 **The Quarantine Solution**:
 Our [QuarantineHandler](file:///Volumes/Work/daemons-lab/d.automation/Data%20Pipeline%20Immune%20System/spark/utils/quarantine.py) splits the stream:
 - 99,975 valid records write immediately to `dpis_silver_dev.orders`.
-- 25 bad records write to `gs://dpis-quarantine-data-pipeline-immune-system` and `dpis_dev.quarantine_records` with the rejection rule and timestamp.
+- 25 bad records write to `gs://dpis-quarantine-...` and `dpis_dev.quarantine_records` with the rejection rule and timestamp.
 
 ### 3.5. Automated Daily Reports & Hourly WhatsApp Pulses
-- **Daily Email Digest**: Aggregates 24-hour BigQuery run counts, success rates, and quarantine tallies into an executive HTML email sent to `dhruvpratapsingh30.official2.o@gmail.com`.
+- **Daily Email Digest**: Aggregates 24-hour BigQuery run counts, success rates, and quarantine tallies into an executive HTML email sent to configured stakeholder recipients.
 - **Hourly WhatsApp Pulse**: Pushes a concise operational status message directly to mobile with current health score and active incident count.
 
 ---
@@ -124,23 +124,22 @@ Our [QuarantineHandler](file:///Volumes/Work/daemons-lab/d.automation/Data%20Pip
 | [spark/](file:///Volumes/Work/daemons-lab/d.automation/Data%20Pipeline%20Immune%20System/spark/) | PySpark ingestion, transformation, and quarantine split utilities. |
 | [sql/](file:///Volumes/Work/daemons-lab/d.automation/Data%20Pipeline%20Immune%20System/sql/) | DDL schemas (`create_tables.sql`), quality queries, health score rollups, and MTTR analytics. |
 | [dashboard/](file:///Volumes/Work/daemons-lab/d.automation/Data%20Pipeline%20Immune%20System/dashboard/) | The interactive industrial command center (`index.html`, `styles.css`, `app.js`). |
-| [tests/](file:///Volumes/Work/daemons-lab/d.automation/Data%20Pipeline%20Immune%20System/tests/) | 58 comprehensive unit, agent, data quality, and end-to-end self-healing tests. |
+| [tests/](file:///Volumes/Work/daemons-lab/d.automation/Data%20Pipeline%20Immune%20System/tests/) | Comprehensive unit, agent, data quality, and end-to-end self-healing tests. |
 
 ---
 
-## 5. Day-One Hands-On Tutorial
+## 5. Developer Hands-On Quickstart
 
 ### Step 1: Run the Test Suite
 Verify that your local environment is configured properly:
 ```bash
 pytest -v
-# You should see 58 passed tests in < 1 second!
 ```
 
-### Step 2: Trigger an Autonomous Healing Cycle via Live Cloud Run
-Send an incident payload to the live Cloud Run service running on GCP:
+### Step 2: Trigger an Autonomous Healing Cycle
+Send an incident payload to the controller endpoint:
 ```bash
-curl -s -X POST https://dpis-dev-api-78310118782.us-central1.run.app/api/v1/runs/complete \
+curl -s -X POST "${CLOUD_RUN_URL:-http://localhost:8080}/api/v1/runs/complete" \
   -H "Content-Type: application/json" \
   -d '{"pipeline_id": "orders", "run_id": "test-run-001", "context": {"task_status": "FAILED", "error_type": "TIMEOUT", "retry_count": 0}}'
 ```
@@ -154,11 +153,11 @@ You will receive:
 }
 ```
 
-### Step 3: View the Live BigQuery Audit Trail
-Check the audit log written by Cloud Run directly in BigQuery:
+### Step 3: View the BigQuery Audit Trail
+Check the audit log written by the controller directly in BigQuery:
 ```bash
 bq query --use_legacy_sql=false \
-  "SELECT event_id, incident_id, agent_name, action_type, status, timestamp FROM \`data-pipeline-immune-system.dpis_dev.audit_log\` ORDER BY timestamp DESC LIMIT 5"
+  "SELECT event_id, incident_id, agent_name, action_type, status, timestamp FROM \`dpis_dev.audit_log\` ORDER BY timestamp DESC LIMIT 5"
 ```
 
 ### Step 4: Run the Daily Email & WhatsApp CLI Dispatchers
@@ -174,7 +173,7 @@ python3 scripts/send_hourly_whatsapp.py --status HEALTHY --score 98.5
 
 ## 6. How to Contribute Safely
 
-1. **Never weaken never-allow rules**: Any modification to `rules/safety_rules.yaml` or `src/risk/never_allow.py` requires an Architecture Decision Record (ADR) and lead review.
+1. **Never weaken never-allow rules**: Any modification to `rules/safety_rules.yaml` or `src/risk/never_allow.py` requires an Architecture Decision Record (ADR) and review.
 2. **Always test failure cases**: When writing tests, test the negative / malicious cases (e.g. attempting to run `DROP TABLE`), not just happy paths.
 3. **Keep secrets out of git**: Never commit `.env` or service account JSON files. Use GCP Secret Manager.
 4. **Follow conventional commits**: Keep commits atomic and use standard prefixes (`feat:`, `fix:`, `docs:`, `test:`).
