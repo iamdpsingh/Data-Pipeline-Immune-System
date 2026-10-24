@@ -117,3 +117,11 @@ def approve_incident_action(payload: ApprovalPayload) -> dict[str, Any]:
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=str(exc),
         ) from exc
+
+
+# Serve Industrial Dashboard at root
+dashboard_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "dashboard")
+if os.path.isdir(dashboard_dir):
+    from fastapi.staticfiles import StaticFiles
+
+    app.mount("/", StaticFiles(directory=dashboard_dir, html=True), name="dashboard")
