@@ -1,0 +1,36 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "CustomersSourcePayload",
+  "type": "object",
+  "required": [
+    "customer_id",
+    "signup_timestamp",
+    "email",
+    "country"
+  ],
+  "properties": {
+    "customer_id": {
+      "type": "string"
+    },
+    "signup_timestamp": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "email": {
+      "type": "string",
+      "format": "email"
+    },
+    "country": {
+      "type": "string",
+      "maxLength": 3
+    },
+    "tier": {
+      "type": "string",
+      "enum": [
+        "STANDARD",
+        "PREMIUM",
+        "ENTERPRISE"
+      ]
+    }
+  }
+}
