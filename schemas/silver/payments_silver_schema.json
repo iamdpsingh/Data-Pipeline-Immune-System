@@ -1,0 +1,39 @@
+{
+  "table": "dpis_silver_dev.payments",
+  "cluster_by": [
+    "status",
+    "currency"
+  ],
+  "columns": [
+    {
+      "name": "payment_id",
+      "type": "STRING",
+      "mode": "REQUIRED"
+    },
+    {
+      "name": "order_id",
+      "type": "STRING",
+      "mode": "REQUIRED"
+    },
+    {
+      "name": "amount_usd",
+      "type": "NUMERIC",
+      "mode": "REQUIRED"
+    },
+    {
+      "name": "currency",
+      "type": "STRING",
+      "mode": "REQUIRED"
+    },
+    {
+      "name": "status",
+      "type": "STRING",
+      "mode": "REQUIRED"
+    },
+    {
+      "name": "processed_at",
+      "type": "TIMESTAMP",
+      "mode": "REQUIRED"
+    }
+  ]
+}
