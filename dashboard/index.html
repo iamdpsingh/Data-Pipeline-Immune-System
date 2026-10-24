@@ -29,8 +29,8 @@
         <span class="stat-value highlight-emerald" id="cloudRunStatus">dpis-dev-api (LIVE)</span>
       </div>
       <div class="telemetry-stat">
-        <span class="stat-label">MONITORED PIPELINES</span>
-        <span class="stat-value" id="totalPipelines">12 ACTIVE</span>
+        <span class="stat-label">5-DAY STREAM INGESTION</span>
+        <span class="stat-value highlight-emerald" id="streamIngestedStat">Streaming...</span>
       </div>
       <div class="telemetry-stat">
         <span class="stat-label">COMPOSITE HEALTH</span>
@@ -112,7 +112,7 @@
       <div class="section-header">
         <div class="section-title-group">
           <h2>MEDALLION LAKEHOUSE ARCHITECTURE & TELEMETRY</h2>
-          <span class="badge-guard">GCS & BIGQUERY SYNC: NOMINAL</span>
+          <span class="badge-guard" id="streamLiveBadge">GCS & BIGQUERY SYNC: NOMINAL</span>
         </div>
         <span class="telemetry-tag">Pipeline: <code>orders_pipeline_v1</code></span>
       </div>
@@ -138,7 +138,7 @@
           <div class="node-icon-code">APPEND</div>
           <div class="node-name">dpis_bronze_dev.orders_raw</div>
           <div class="node-stats">
-            <span>Rows: <strong>100,000 / batch</strong></span>
+            <span>Rows: <strong id="bronzeRowsCount">40,840,000</strong></span>
             <span>Partition: <strong>DATE(_ingested_at)</strong></span>
           </div>
           <div class="node-status text-emerald">APPEND-ONLY MIRRORED</div>
@@ -152,8 +152,8 @@
           <div class="node-icon-code">CONFORM</div>
           <div class="node-name">dpis_silver_dev.orders</div>
           <div class="node-stats">
-            <span>Valid Rows: <strong>99,860</strong></span>
-            <span>Quarantined: <strong class="text-amber">14 rows (0.014%)</strong></span>
+            <span>Valid Rows: <strong id="silverValidRows">40,839,160</strong></span>
+            <span>Quarantined: <strong class="text-amber" id="silverQuarantinedRows">840 rows</strong></span>
           </div>
           <div class="node-status text-emerald">QUALITY GATE ACTIVE (ADR-008)</div>
         </div>

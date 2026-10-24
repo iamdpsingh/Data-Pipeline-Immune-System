@@ -359,10 +359,51 @@ function triggerWhatsAppAlert() {
 }
 
 // ------------------------------------------------------------------------------
+// Live Telemetry Auto-Polling (Dynamic real-time record ticker)
+// ------------------------------------------------------------------------------
+async function fetchLiveTelemetry() {
+  try {
+    const res = await fetch("/api/v1/telemetry");
+    if (!res.ok) return;
+    const data = await res.json();
+
+    const streamHeaderStat = document.getElementById("streamIngestedStat");
+    if (streamHeaderStat) {
+      streamHeaderStat.textContent = `${Number(data.total_processed).toLocaleString()} (${data.rps} RPS)`;
+    }
+
+    const bronzeRows = document.getElementById("bronzeRowsCount");
+    if (bronzeRows) {
+      bronzeRows.textContent = `${Number(data.total_processed).toLocaleString()} rows`;
+    }
+
+    const silverRows = document.getElementById("silverValidRows");
+    if (silverRows) {
+      silverRows.textContent = `${Number(data.total_clean).toLocaleString()} valid rows`;
+    }
+
+    const dlqRows = document.getElementById("silverQuarantinedRows");
+    if (dlqRows) {
+      const qPct = ((data.total_quarantined / (data.total_processed || 1)) * 100).toFixed(3);
+      dlqRows.textContent = `${Number(data.total_quarantined).toLocaleString()} rows (${qPct}%)`;
+    }
+
+    const streamBadge = document.getElementById("streamLiveBadge");
+    if (streamBadge) {
+      streamBadge.textContent = `LIVE STREAM ACTIVE: ${Number(data.total_processed).toLocaleString()} / ${Number(data.target_daily_volume).toLocaleString()} (${data.progress_pct}%)`;
+    }
+  } catch (e) {
+    // Silent catch for initial load
+  }
+}
+
+// ------------------------------------------------------------------------------
 // Initialization & Event Listeners
 // ------------------------------------------------------------------------------
 document.addEventListener("DOMContentLoaded", () => {
   renderTable(incidentsData);
+  fetchLiveTelemetry();
+  setInterval(fetchLiveTelemetry, 1500);
 
   const filterInput = document.getElementById("tableFilter");
   if (filterInput) {
