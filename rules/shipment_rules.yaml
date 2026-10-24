@@ -1,0 +1,14 @@
+# Logistics Shipment Transit Rules
+rules:
+  - id: SR_MISSING_TRACKING
+    field: tracking_number
+    condition: "IS_NULL OR LENGTH < 6"
+    severity: P2
+    action: QUARANTINE_RECORD
+    description: "Shipment carrier dispatch requires valid tracking identifier."
+  - id: SR_EXCESSIVE_TRANSIT
+    field: transit_duration_hours
+    condition: "> 240.0"
+    severity: P3
+    action: LOG_TELEMETRY
+    description: "Shipments in transit over 10 days flagged for carrier SLA review."
