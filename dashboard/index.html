@@ -37,7 +37,7 @@
         <span class="stat-value highlight-emerald" id="overallHealthScore">98.5 / 100</span>
       </div>
       <button class="btn btn-primary" id="btnTriggerScan">
-        <span class="btn-icon">⚡</span> RUN LIVE IMMUNE SWEEP
+        <span class="btn-icon">RUN</span> AUDIT SWEEP
       </button>
     </div>
   </header>
@@ -46,14 +46,14 @@
   <main class="dashboard-container">
     <!-- Top Executive KPI Matrix -->
     <section class="kpi-grid">
-      <div class="kpi-card glass-panel">
+      <div class="kpi-card industrial-panel">
         <div class="kpi-header">
           <span class="kpi-title">COMPOSITE HEALTH SCORE</span>
           <span class="kpi-badge badge-emerald">HEALTHY</span>
         </div>
         <div class="kpi-value-row">
           <span class="kpi-main-number text-emerald" id="kpiScore">98.5</span>
-          <span class="kpi-trend text-emerald">↑ +2.1% (24h)</span>
+          <span class="kpi-trend text-emerald">+2.1% (24H BASELINE)</span>
         </div>
         <div class="kpi-progress-bar">
           <div class="progress-fill emerald-fill" style="width: 98.5%;"></div>
@@ -61,14 +61,14 @@
         <div class="kpi-subtext">Weighted reliability index across Bronze, Silver, Gold</div>
       </div>
 
-      <div class="kpi-card glass-panel">
+      <div class="kpi-card industrial-panel">
         <div class="kpi-header">
           <span class="kpi-title">AUTONOMOUS MTTR</span>
           <span class="kpi-badge badge-indigo">SUB-MINUTE</span>
         </div>
         <div class="kpi-value-row">
           <span class="kpi-main-number text-indigo">0.7m</span>
-          <span class="kpi-trend text-indigo">⚡ -91% vs Human MTTR</span>
+          <span class="kpi-trend text-indigo">-91% VS MANUAL ON-CALL</span>
         </div>
         <div class="kpi-progress-bar">
           <div class="progress-fill indigo-fill" style="width: 91%;"></div>
@@ -76,14 +76,14 @@
         <div class="kpi-subtext">Mean time to autonomous self-healing</div>
       </div>
 
-      <div class="kpi-card glass-panel">
+      <div class="kpi-card industrial-panel">
         <div class="kpi-header">
           <span class="kpi-title">NEVER-ALLOW SAFETY GATES</span>
           <span class="kpi-badge badge-emerald">INVIOLABLE</span>
         </div>
         <div class="kpi-value-row">
           <span class="kpi-main-number text-emerald">100%</span>
-          <span class="kpi-trend text-emerald">0 Safety Violations</span>
+          <span class="kpi-trend text-emerald">0 VIOLATIONS</span>
         </div>
         <div class="kpi-progress-bar">
           <div class="progress-fill emerald-fill" style="width: 100%;"></div>
@@ -91,14 +91,14 @@
         <div class="kpi-subtext">Code-enforced bounds (DROP TABLE & SQL injection blocked)</div>
       </div>
 
-      <div class="kpi-card glass-panel">
+      <div class="kpi-card industrial-panel">
         <div class="kpi-header">
           <span class="kpi-title">AUTO-REMEDIATION RATE</span>
           <span class="kpi-badge badge-amber">CLOSED-LOOP</span>
         </div>
         <div class="kpi-value-row">
           <span class="kpi-main-number text-amber" id="autoResolvedCount">51 / 53</span>
-          <span class="kpi-trend text-amber">96.2% Autonomous</span>
+          <span class="kpi-trend text-amber">96.2% AUTONOMOUS</span>
         </div>
         <div class="kpi-progress-bar">
           <div class="progress-fill amber-fill" style="width: 96.2%;"></div>
@@ -108,7 +108,7 @@
     </section>
 
     <!-- Medallion Lakehouse Flow Visualizer -->
-    <section class="lakehouse-flow-section glass-panel">
+    <section class="lakehouse-flow-section industrial-panel">
       <div class="section-header">
         <div class="section-title-group">
           <h2>MEDALLION LAKEHOUSE ARCHITECTURE & TELEMETRY</h2>
@@ -120,62 +120,62 @@
       <div class="lakehouse-flow-container">
         <!-- Node 1: Source Landing -->
         <div class="lakehouse-node" onclick="inspectNode('source')">
-          <div class="node-badge">GCS LANDING</div>
-          <div class="node-icon">📦</div>
+          <div class="node-badge">[GCS:LANDING]</div>
+          <div class="node-icon-code">STORAGE</div>
           <div class="node-name">gs://dpis-source-data-pipeline-immune-system</div>
           <div class="node-stats">
             <span>Raw Objects: <strong>14.2 GB / day</strong></span>
-            <span>Format: <strong>JSON / CSV</strong></span>
+            <span>Format: <strong>JSON / CSV / PARQUET</strong></span>
           </div>
-          <div class="node-status text-emerald">● Ingesting Normal</div>
+          <div class="node-status text-emerald">ONLINE // INGESTION ACTIVE</div>
         </div>
 
-        <div class="flow-arrow">➔</div>
+        <div class="flow-arrow">&rarr;</div>
 
         <!-- Node 2: Bronze Raw -->
         <div class="lakehouse-node" onclick="inspectNode('bronze')">
-          <div class="node-badge">BRONZE TIER</div>
-          <div class="node-icon">🥉</div>
+          <div class="node-badge">[BQ:BRONZE]</div>
+          <div class="node-icon-code">APPEND</div>
           <div class="node-name">dpis_bronze_dev.orders_raw</div>
           <div class="node-stats">
             <span>Rows: <strong>100,000 / batch</strong></span>
             <span>Partition: <strong>DATE(_ingested_at)</strong></span>
           </div>
-          <div class="node-status text-emerald">● Append-Only Mirrored</div>
+          <div class="node-status text-emerald">APPEND-ONLY MIRRORED</div>
         </div>
 
-        <div class="flow-arrow">➔</div>
+        <div class="flow-arrow">&rarr;</div>
 
         <!-- Node 3: Silver Conformed + Quarantine Split -->
-        <div class="lakehouse-node active-glow" onclick="inspectNode('silver')">
-          <div class="node-badge">SILVER & QUARANTINE</div>
-          <div class="node-icon">🥈</div>
+        <div class="lakehouse-node active-node" onclick="inspectNode('silver')">
+          <div class="node-badge">[BQ:SILVER + DLQ]</div>
+          <div class="node-icon-code">CONFORM</div>
           <div class="node-name">dpis_silver_dev.orders</div>
           <div class="node-stats">
             <span>Valid Rows: <strong>99,860</strong></span>
             <span>Quarantined: <strong class="text-amber">14 rows (0.014%)</strong></span>
           </div>
-          <div class="node-status text-emerald">● Quality Gate: Enforcing ADR-008</div>
+          <div class="node-status text-emerald">QUALITY GATE ACTIVE (ADR-008)</div>
         </div>
 
-        <div class="flow-arrow">➔</div>
+        <div class="flow-arrow">&rarr;</div>
 
         <!-- Node 4: Gold Analytics -->
         <div class="lakehouse-node" onclick="inspectNode('gold')">
-          <div class="node-badge">GOLD MARTS</div>
-          <div class="node-icon">🥇</div>
+          <div class="node-badge">[BQ:GOLD]</div>
+          <div class="node-icon-code">MARTS</div>
           <div class="node-name">dpis_gold_dev.daily_order_summary</div>
           <div class="node-stats">
-            <span>Aggregations: <strong>Daily KPIs</strong></span>
+            <span>Aggregations: <strong>DAILY KPIS</strong></span>
             <span>Latency: <strong>&lt; 5 mins</strong></span>
           </div>
-          <div class="node-status text-emerald">● Production Ready</div>
+          <div class="node-status text-emerald">PRODUCTION READY</div>
         </div>
       </div>
     </section>
 
     <!-- Active Incident Agent Lifecycle Visualizer -->
-    <section class="lifecycle-visualizer-section glass-panel">
+    <section class="lifecycle-visualizer-section industrial-panel">
       <div class="section-header">
         <div class="section-title-group">
           <h2>MULTI-AGENT AUTONOMOUS IMMUNE CYCLE (ADR-002)</h2>
@@ -253,7 +253,7 @@
     <!-- Bottom Section: Split Pane (Incidents Table & Chaos Failure Simulator) -->
     <div class="bottom-split-grid">
       <!-- Left: Real-time Incident Audit Log -->
-      <section class="incidents-table-panel glass-panel">
+      <section class="incidents-table-panel industrial-panel">
         <div class="section-header">
           <div class="section-title-group">
             <h2>BIGQUERY INCIDENT AUDIT TRAIL</h2>
@@ -285,7 +285,7 @@
         <!-- Dead-Letter Quarantine Inspector Panel -->
         <div class="quarantine-preview-panel">
           <div class="quarantine-header">
-            <h3>⚠️ DEAD-LETTER QUARANTINE INSPECTOR (ADR-008)</h3>
+            <h3>DEAD-LETTER QUARANTINE TELEMETRY (ADR-008)</h3>
             <span class="quarantine-badge">14 RECORDS ISOLATED</span>
           </div>
           <div class="quarantine-records-list">
@@ -306,7 +306,7 @@
       </section>
 
       <!-- Right: Chaos Failure Injection Controls -->
-      <section class="chaos-injection-panel glass-panel">
+      <section class="chaos-injection-panel industrial-panel">
         <div class="section-header">
           <h2>CHAOS & REAL-TIME CONTROLLER</h2>
           <span class="badge-guard">ENVIRONMENT GUARD: ACTIVE</span>
@@ -394,9 +394,9 @@
 
   <!-- Interactive Human Approval Modal (HITL) -->
   <div class="modal-backdrop" id="approvalModal" style="display: none;">
-    <div class="modal-card glass-panel">
+    <div class="modal-card industrial-panel">
       <div class="modal-header">
-        <h3 class="modal-title">⚠️ OPERATOR SIGN-OFF REQUIRED (HIGH RISK)</h3>
+        <h3 class="modal-title">[ACTION REQUIRED] OPERATOR SIGN-OFF REQUIRED (HIGH RISK)</h3>
         <button class="modal-close" onclick="closeApprovalModal()">&times;</button>
       </div>
       <div class="modal-body">
