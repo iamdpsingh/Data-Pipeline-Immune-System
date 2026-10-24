@@ -16,7 +16,7 @@ CREATE TABLE IF NOT EXISTS `{project}.{dataset}.pipeline_registry` (
   source            STRING,               -- GCS path or API endpoint
   destination       STRING,               -- BigQuery table (full path)
   criticality       STRING NOT NULL,      -- LOW, MEDIUM, HIGH, CRITICAL
-  enabled           BOOL NOT NULL DEFAULT TRUE,
+  enabled           BOOL DEFAULT TRUE NOT NULL,
   created_at        TIMESTAMP NOT NULL,
   updated_at        TIMESTAMP
 )
@@ -59,7 +59,7 @@ CREATE TABLE IF NOT EXISTS `{project}.{dataset}.pipeline_tasks` (
   status            STRING NOT NULL,      -- SUCCESS, FAILED, SKIPPED, RUNNING
   start_time        TIMESTAMP,
   end_time          TIMESTAMP,
-  retry_count       INT64 NOT NULL DEFAULT 0,
+  retry_count       INT64 DEFAULT 0 NOT NULL,
   error_message     STRING,
   operator          STRING                -- Airflow operator type
 )
@@ -84,7 +84,7 @@ CREATE TABLE IF NOT EXISTS `{project}.{dataset}.data_quality_results` (
   threshold         FLOAT64,
   status            STRING NOT NULL,      -- PASS, FAIL, WARN
   severity          STRING,               -- P0, P1, P2, P3
-  is_verification   BOOL NOT NULL DEFAULT FALSE,  -- TRUE if this is a post-remediation check
+  is_verification   BOOL DEFAULT FALSE NOT NULL,  -- TRUE if this is a post-remediation check
   timestamp         TIMESTAMP NOT NULL
 )
 PARTITION BY DATE(timestamp)
@@ -191,7 +191,7 @@ CREATE TABLE IF NOT EXISTS `{project}.{dataset}.diagnoses` (
   evidence            JSON NOT NULL,          -- list of evidence strings
   recommended_action  STRING NOT NULL,
   similar_incidents   JSON,                   -- list of similar incident IDs from memory
-  used_llm            BOOL NOT NULL DEFAULT FALSE,
+  used_llm            BOOL DEFAULT FALSE NOT NULL,
   diagnosed_at        TIMESTAMP NOT NULL
 )
 PARTITION BY DATE(diagnosed_at)
@@ -267,7 +267,7 @@ CREATE TABLE IF NOT EXISTS `{project}.{dataset}.approval_requests` (
   risk_level        STRING NOT NULL,
   confidence        FLOAT64,
   evidence          JSON,
-  status            STRING NOT NULL DEFAULT 'PENDING',  -- PENDING, APPROVED, REJECTED
+  status            STRING DEFAULT 'PENDING' NOT NULL,  -- PENDING, APPROVED, REJECTED
   requested_at      TIMESTAMP NOT NULL,
   responded_at      TIMESTAMP,
   responded_by      STRING
@@ -311,7 +311,7 @@ CREATE TABLE IF NOT EXISTS `{project}.{dataset}.quarantine_records` (
   failure_reason    STRING NOT NULL,
   rule_violated     STRING,
   quarantined_at    TIMESTAMP NOT NULL,
-  reprocessed       BOOL NOT NULL DEFAULT FALSE,
+  reprocessed       BOOL DEFAULT FALSE NOT NULL,
   reprocessed_at    TIMESTAMP
 )
 PARTITION BY DATE(quarantined_at)
