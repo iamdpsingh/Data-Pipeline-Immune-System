@@ -203,20 +203,20 @@ These are enforced in application code and policy configuration, not inside the 
 
 ---
 
-## Live Google Cloud Deployment
+## Google Cloud Platform Architecture & Infrastructure
 
-The entire system is deployed on **Google Cloud Platform** under project [`data-pipeline-immune-system`](https://console.cloud.google.com/welcome/new?project=data-pipeline-immune-system):
-- **Autonomous Controller API**: [`https://dpis-dev-api-78310118782.us-central1.run.app`](https://dpis-dev-api-78310118782.us-central1.run.app)
-- **Interactive Swagger / OpenAPI Docs**: [`https://dpis-dev-api-78310118782.us-central1.run.app/docs`](https://dpis-dev-api-78310118782.us-central1.run.app/docs)
-- **Container Registry**: `us-central1-docker.pkg.dev/data-pipeline-immune-system/dpis-repo/immune-system:latest`
-- **Lakehouse GCS Buckets**: `gs://dpis-source-data-pipeline-immune-system`, `gs://dpis-quarantine-data-pipeline-immune-system`
-- **Warehouse & Telemetry**: BigQuery datasets `dpis_dev`, `dpis_bronze_dev`, `dpis_silver_dev`, `dpis_gold_dev`, `dpis_audit`
+The system is engineered natively on **Google Cloud Platform**, utilizing enterprise-grade serverless compute, event streams, and lakehouse storage:
+- **Autonomous Controller**: Cloud Run stateless microservice orchestrating multi-agent state machines and serving the command center API
+- **Lakehouse Warehousing & Audit**: BigQuery partitioned datasets (`dpis_dev`, `dpis_bronze_dev`, `dpis_silver_dev`, `dpis_gold_dev`, `dpis_audit`)
+- **Immutable Object Storage**: Cloud Storage buckets for raw ingestion, bronze landing, and dead-letter quarantine routing
+- **Container Registry**: Google Artifact Registry storing versioned container artifacts
+- **Security & Secret Ingress**: Google Secret Manager for runtime credential injection and Workload Identity
 
 ---
 
 ## Documentation Index
 
-- **[Junior & Intern Developer Onboarding Guide](docs/onboarding/intern-developer-guide.md)** — Comprehensive plain-English walkthrough of GCP services, architecture, algorithms, and tutorials
+- **[Platform Engineering & Architecture Guide](docs/architecture/platform-engineering-guide.md)** — Comprehensive walkthrough of GCP services, architecture, algorithms, and developer quickstart
 - [System Architecture](docs/architecture/system-architecture.md)
 - [Agent Architecture](docs/architecture/agent-architecture.md)
 - [Data Flow & Medallion Design](docs/architecture/data-flow.md)
