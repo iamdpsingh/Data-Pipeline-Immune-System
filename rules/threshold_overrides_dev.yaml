@@ -1,0 +1,7 @@
+# Development Environment Threshold Overrides
+environment: dev
+overrides:
+  zscore_threshold: 1.5
+  quarantine_sample_pct: 100
+  failure_injection_enabled: true
+  min_audit_buffer_size: 1
