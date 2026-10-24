@@ -1,0 +1,36 @@
+{
+  "title": "ShipmentsSourcePayload",
+  "type": "object",
+  "required": [
+    "tracking_number",
+    "order_id",
+    "carrier",
+    "status",
+    "dispatched_at"
+  ],
+  "properties": {
+    "tracking_number": {
+      "type": "string"
+    },
+    "order_id": {
+      "type": "string"
+    },
+    "carrier": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "LABEL_CREATED",
+        "IN_TRANSIT",
+        "OUT_FOR_DELIVERY",
+        "DELIVERED",
+        "EXCEPTION"
+      ]
+    },
+    "dispatched_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  }
+}
