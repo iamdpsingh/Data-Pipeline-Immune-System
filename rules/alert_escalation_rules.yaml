@@ -1,0 +1,14 @@
+# Escalation Policy for Unresolved Incidents
+escalations:
+  p0_critical:
+    grace_period_seconds: 0
+    channels: ["telegram", "whatsapp", "pagerduty"]
+    require_human_signoff: true
+  p1_high:
+    grace_period_seconds: 120
+    channels: ["telegram", "daily_email"]
+    require_human_signoff: false
+  p2_medium:
+    grace_period_seconds: 300
+    channels: ["audit_log"]
+    require_human_signoff: false
