@@ -1,0 +1,26 @@
+{
+  "table": "dpis_gold_dev.warehouse_stockout_risk",
+  "partition_by": "report_date",
+  "columns": [
+    {
+      "name": "report_date",
+      "type": "DATE",
+      "mode": "REQUIRED"
+    },
+    {
+      "name": "warehouse_id",
+      "type": "STRING",
+      "mode": "REQUIRED"
+    },
+    {
+      "name": "critical_sku_count",
+      "type": "INT64",
+      "mode": "REQUIRED"
+    },
+    {
+      "name": "estimated_runout_days",
+      "type": "FLOAT64",
+      "mode": "REQUIRED"
+    }
+  ]
+}
