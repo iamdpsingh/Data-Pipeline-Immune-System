@@ -196,13 +196,19 @@ class Enterprise10MLoadSimulator:
         chunk_size = 500
         interval = chunk_size / rate_per_sec  # ~4.3 seconds per chunk
 
-        current_day = min(self.days, (self.total_processed // self.target_daily_volume) + 1)
+        current_day = min(
+            self.days, (self.total_processed // self.target_daily_volume) + 1
+        )
 
         print("\n" + "=" * 78)
         print("  STARTING 5-DAY CONTINUOUS REAL-TIME ENTERPRISE STREAMING SIMULATION")
-        print(f"  Target Total Volume: {self.total_target_volume:,} records across {self.days} days")
+        print(
+            f"  Target Total Volume: {self.total_target_volume:,} records across {self.days} days"
+        )
         print(f"  Target Daily Volume: {self.target_daily_volume:,} records/day")
-        print(f"  Current Starting Status: Day {current_day}/{self.days} ({self.total_processed:,} records)")
+        print(
+            f"  Current Starting Status: Day {current_day}/{self.days} ({self.total_processed:,} records)"
+        )
         print(
             f"  Target Rate: {rate_per_sec:.1f} records/sec | Interval: {interval:.2f}s per {chunk_size} batch"
         )
@@ -222,8 +228,13 @@ class Enterprise10MLoadSimulator:
                 elapsed = (time.time() - self.start_time) + self.accumulated_elapsed
                 rps = self.total_processed / elapsed if elapsed > 0 else 0
                 overall_pct = (self.total_processed / self.total_target_volume) * 100
-                day_num = min(self.days, (self.total_processed // self.target_daily_volume) + 1)
-                day_pct = ((self.total_processed % self.target_daily_volume) / self.target_daily_volume) * 100
+                day_num = min(
+                    self.days, (self.total_processed // self.target_daily_volume) + 1
+                )
+                day_pct = (
+                    (self.total_processed % self.target_daily_volume)
+                    / self.target_daily_volume
+                ) * 100
 
                 logger.info(
                     f"Day {day_num}/{self.days} | Chunk {batch_id:05d} | "
@@ -382,4 +393,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
