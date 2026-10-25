@@ -89,17 +89,52 @@ class Enterprise10MLoadSimulator:
     def __init__(
         self,
         target_daily_volume: int = 10_000_000,
+        days: int = 5,
         batch_size: int = 10_000,
         mode: str = "benchmark",
+        resume: bool = True,
     ):
         self.target_daily_volume = target_daily_volume
+        self.days = max(1, days)
+        self.total_target_volume = self.target_daily_volume * self.days
         self.batch_size = batch_size
         self.mode = mode
+        self.resume = resume
         self.controller = ImmuneSystemController()
         self.total_processed = 0
         self.total_quarantined = 0
         self.total_clean = 0
+        self.start_chunk = 0
+        self.accumulated_elapsed = 0.0
         self.start_time = time.time()
+
+        if self.resume:
+            self._load_existing_state()
+
+    def _load_existing_state(self) -> None:
+        telemetry_path = os.path.join(
+            os.path.dirname(os.path.dirname(__file__)),
+            "dashboard",
+            "telemetry.json",
+        )
+        if os.path.exists(telemetry_path):
+            try:
+                with open(telemetry_path) as tf:
+                    data = json.load(tf)
+                self.total_processed = data.get("total_processed", 0)
+                self.total_clean = data.get("total_clean", 0)
+                self.total_quarantined = data.get("total_quarantined", 0)
+                self.start_chunk = data.get("chunk", 0)
+                self.accumulated_elapsed = data.get("elapsed_sec", 0.0)
+                logger.info(
+                    "Resuming stream state from telemetry.json: %s records processed (%s clean, %s quarantined, chunk %d)",
+                    f"{self.total_processed:,}",
+                    f"{self.total_clean:,}",
+                    f"{self.total_quarantined:,}",
+                    self.start_chunk,
+                )
+            except Exception as e:
+                logger.warning("Could not load telemetry.json to resume: %s", e)
 
     def process_micro_batch(
         self, batch_id: int, records: list[dict[str, Any]]
@@ -143,7 +178,7 @@ class Enterprise10MLoadSimulator:
                 generate_streaming_batch(self.batch_size, anomaly_rate=0.001)
             )
             res = self.process_micro_batch(b, batch_data)
-            elapsed = time.time() - self.start_time
+            elapsed = (time.time() - self.start_time) + self.accumulated_elapsed
             throughput = self.total_processed / elapsed if elapsed > 0 else 0
             print(
                 f"Batch {b:03d}/{batches:03d} | "
@@ -156,37 +191,43 @@ class Enterprise10MLoadSimulator:
         self._print_summary()
 
     def run_realtime(self) -> None:
-        """Runs continuous 24-hr streaming at ~116 records/sec (~10M records / 24h)."""
+        """Runs continuous multi-day streaming at ~116 records/sec (~10M records / 24h)."""
         rate_per_sec = self.target_daily_volume / (24 * 3600)  # ~115.7 records/sec
         chunk_size = 500
         interval = chunk_size / rate_per_sec  # ~4.3 seconds per chunk
 
+        current_day = min(self.days, (self.total_processed // self.target_daily_volume) + 1)
+
         print("\n" + "=" * 78)
-        print("  STARTING 24-HOUR REAL-TIME ENTERPRISE STREAMING SIMULATION")
-        print(f"  Target Daily Volume: {self.target_daily_volume:,} records")
+        print("  STARTING 5-DAY CONTINUOUS REAL-TIME ENTERPRISE STREAMING SIMULATION")
+        print(f"  Target Total Volume: {self.total_target_volume:,} records across {self.days} days")
+        print(f"  Target Daily Volume: {self.target_daily_volume:,} records/day")
+        print(f"  Current Starting Status: Day {current_day}/{self.days} ({self.total_processed:,} records)")
         print(
             f"  Target Rate: {rate_per_sec:.1f} records/sec | Interval: {interval:.2f}s per {chunk_size} batch"
         )
         print("=" * 78 + "\n")
 
-        batch_id = 0
+        batch_id = self.start_chunk
         last_hourly_alert_time = time.time()
         alert_dispatcher = WhatsAppAlertDispatcher()
         try:
-            while self.total_processed < self.target_daily_volume:
+            while self.total_processed < self.total_target_volume:
                 batch_id += 1
                 batch_data = list(
                     generate_streaming_batch(chunk_size, anomaly_rate=0.0004)
                 )
                 self.process_micro_batch(batch_id, batch_data)
 
-                elapsed = time.time() - self.start_time
+                elapsed = (time.time() - self.start_time) + self.accumulated_elapsed
                 rps = self.total_processed / elapsed if elapsed > 0 else 0
-                pct = (self.total_processed / self.target_daily_volume) * 100
+                overall_pct = (self.total_processed / self.total_target_volume) * 100
+                day_num = min(self.days, (self.total_processed // self.target_daily_volume) + 1)
+                day_pct = ((self.total_processed % self.target_daily_volume) / self.target_daily_volume) * 100
 
                 logger.info(
-                    f"Chunk {batch_id:05d} | "
-                    f"Total: {self.total_processed:,} ({pct:.2f}%) | "
+                    f"Day {day_num}/{self.days} | Chunk {batch_id:05d} | "
+                    f"Total: {self.total_processed:,} ({overall_pct:.2f}%) | "
                     f"Quarantined: {self.total_quarantined} | "
                     f"RPS: {rps:.1f}"
                 )
@@ -194,12 +235,16 @@ class Enterprise10MLoadSimulator:
                 # Persist live telemetry state for dashboard dynamic updates
                 telemetry = {
                     "running": True,
+                    "current_day": day_num,
+                    "total_days": self.days,
                     "target_daily_volume": self.target_daily_volume,
+                    "total_target_volume": self.total_target_volume,
                     "total_processed": self.total_processed,
                     "total_clean": self.total_clean,
                     "total_quarantined": self.total_quarantined,
                     "rps": round(rps, 1),
-                    "progress_pct": round(pct, 2),
+                    "progress_pct": round(overall_pct, 2),
+                    "day_progress_pct": round(day_pct, 2),
                     "chunk": batch_id,
                     "elapsed_sec": round(elapsed, 1),
                     "timestamp": datetime.now(UTC).isoformat(),
@@ -226,8 +271,9 @@ class Enterprise10MLoadSimulator:
                             health_score=98.8,
                             message=(
                                 f"🛡️ *Data Pipeline Immune System — Hourly Operational Pulse*\n\n"
+                                f"• *Day Cycle*: Day {day_num} of {self.days}\n"
                                 f"• *Lakehouse Health*: 98.8/100 (OPTIMAL)\n"
-                                f"• *Ingested (24h Stream)*: {self.total_processed:,} records ({pct:.2f}%)\n"
+                                f"• *Ingested Records*: {self.total_processed:,} / {self.total_target_volume:,} ({overall_pct:.2f}%)\n"
                                 f"• *Clean Rows in Silver*: {self.total_clean:,} records (100% Cleanness Guarantee)\n"
                                 f"• *Quarantined to DLQ*: {self.total_quarantined:,} corrupt records isolated\n"
                                 f"• *Streaming Rate*: {rps:.1f} records/sec\n"
@@ -251,7 +297,7 @@ class Enterprise10MLoadSimulator:
         self._print_summary()
 
     def _print_summary(self) -> None:
-        elapsed = time.time() - self.start_time
+        elapsed = (time.time() - self.start_time) + self.accumulated_elapsed
         calc = HealthScoreCalculator()
         factors = PipelineFactors(
             reliability=1.0,
@@ -291,10 +337,21 @@ def main():
         help="Simulation mode",
     )
     parser.add_argument(
+        "--days",
+        type=int,
+        default=5,
+        help="Number of continuous 24-hr simulation days (default: 5)",
+    )
+    parser.add_argument(
         "--target-daily-volume",
         type=int,
         default=10_000_000,
-        help="Target 24-hr record volume (e.g. 9500000-10500000)",
+        help="Target 24-hr record volume (e.g. 10000000)",
+    )
+    parser.add_argument(
+        "--no-resume",
+        action="store_true",
+        help="Do not resume from existing telemetry.json state",
     )
     parser.add_argument(
         "--batch-size", type=int, default=10_000, help="Micro-batch size for streaming"
@@ -309,8 +366,10 @@ def main():
 
     simulator = Enterprise10MLoadSimulator(
         target_daily_volume=args.target_daily_volume,
+        days=args.days,
         batch_size=args.batch_size,
         mode=args.mode,
+        resume=not args.no_resume,
     )
 
     if args.mode == "benchmark":
@@ -318,8 +377,9 @@ def main():
     elif args.mode == "realtime":
         simulator.run_realtime()
     elif args.mode == "batch":
-        simulator.run_benchmark(max_records=args.target_daily_volume)
+        simulator.run_benchmark(max_records=simulator.total_target_volume)
 
 
 if __name__ == "__main__":
     main()
+

@@ -390,7 +390,9 @@ async function fetchLiveTelemetry() {
 
     const streamBadge = document.getElementById("streamLiveBadge");
     if (streamBadge) {
-      streamBadge.textContent = `LIVE STREAM ACTIVE: ${Number(data.total_processed).toLocaleString()} / ${Number(data.target_daily_volume).toLocaleString()} (${data.progress_pct}%)`;
+      const dayPrefix = data.current_day && data.total_days ? `DAY ${data.current_day}/${data.total_days} · ` : "";
+      const targetVol = data.total_target_volume || data.target_daily_volume;
+      streamBadge.textContent = `LIVE STREAM ACTIVE: ${dayPrefix}${Number(data.total_processed).toLocaleString()} / ${Number(targetVol).toLocaleString()} (${data.progress_pct}%)`;
     }
   } catch (e) {
     // Silent catch for initial load
