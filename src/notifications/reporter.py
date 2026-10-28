@@ -326,12 +326,14 @@ class EmailDispatcher:
         recipient: str,
         metrics: DailyReportMetrics,
         generator: DailyReportGenerator | None = None,
+        subject: str | None = None,
     ) -> bool:
         """Sends the compiled daily report to the recipient address."""
         gen = generator or DailyReportGenerator(environment=metrics.environment)
         html_body = gen.render_html_report(metrics)
         text_body = gen.render_text_report(metrics)
-        subject = f"🛡️ [Daily Health Report] Data Pipeline Immune System ({metrics.overall_health_score}/100) — {metrics.report_date}"
+        if subject is None:
+            subject = f"🛡️ [Daily Health Report] Data Pipeline Immune System ({metrics.overall_health_score}/100) — {metrics.report_date}"
 
         # If SMTP credentials are not configured or recipient is a test/example domain, simulate delivery safely
         if (
