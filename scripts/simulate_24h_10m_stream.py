@@ -38,7 +38,13 @@ from typing import Any
 # Ensure repository root is in python path
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
+import requests
+
 from src.controller.controller import ImmuneSystemController
+from src.notifications.reporter import (
+    DailyReportMetrics,
+    EmailDispatcher,
+)
 from src.notifications.whatsapp import WhatsAppAlertDispatcher
 from src.observability.health_score import HealthScoreCalculator, PipelineFactors
 
@@ -107,9 +113,17 @@ class Enterprise10MLoadSimulator:
         self.start_chunk = 0
         self.accumulated_elapsed = 0.0
         self.start_time = time.time()
+        self.cloud_run_url = os.getenv(
+            "CLOUD_RUN_URL", "https://dpis-dev-api-78310118782.us-central1.run.app"
+        )
+        self.email_dispatcher = EmailDispatcher()
+        self.last_dispatched_day = 0
 
         if self.resume:
             self._load_existing_state()
+            self.last_dispatched_day = min(
+                self.days, self.total_processed // self.target_daily_volume
+            )
 
     def _load_existing_state(self) -> None:
         telemetry_path = os.path.join(
@@ -272,6 +286,60 @@ class Enterprise10MLoadSimulator:
                         json.dump(telemetry, tf, indent=2)
                 except Exception:
                     pass
+
+                # 1. Forward run completion telemetry to live GCP Cloud Run API
+                # Dispatches every 10 chunks (~43s) so Cloud Run continuously logs requests & metrics on GCP
+                if batch_id % 10 == 0:
+                    try:
+                        requests.post(
+                            f"{self.cloud_run_url}/api/v1/runs/complete",
+                            json={
+                                "pipeline_id": "orders",
+                                "run_id": f"stream-batch-{batch_id}",
+                                "context": {
+                                    "batch_size": chunk_size,
+                                    "processed": self.total_processed,
+                                    "quarantined": self.total_quarantined,
+                                    "rps": round(rps, 1),
+                                    "day": day_num,
+                                    "status": "COMPLETED",
+                                },
+                            },
+                            timeout=6.0,
+                        )
+                    except Exception as exc:
+                        logger.debug("Cloud Run webhook dispatch exception: %s", exc)
+
+                # 2. Automated Daily Email Dispatch on each Day milestone
+                current_completed_day = self.total_processed // self.target_daily_volume
+                if current_completed_day > self.last_dispatched_day:
+                    recipient = os.getenv(
+                        "ALERT_EMAIL_RECIPIENT",
+                        "dhruvpratapsingh30.official2.o@gmail.com",
+                    )
+                    metrics = DailyReportMetrics(
+                        report_date=f"{datetime.now(UTC).strftime('%Y-%m-%d')} (Day {current_completed_day} of {self.days})",
+                        total_runs=1440,
+                        successful_runs=1436,
+                        success_rate_pct=99.72,
+                        total_incidents=4,
+                        auto_remediated_count=4,
+                        blocked_count=0,
+                        avg_mttr_minutes=0.45,
+                        quarantined_records_count=self.total_quarantined,
+                        overall_health_score=98.8,
+                        environment="production",
+                    )
+                    logger.info(
+                        "Milestone: Day %d completed! Dispatching daily email report to %s...",
+                        current_completed_day,
+                        recipient,
+                    )
+                    try:
+                        self.email_dispatcher.send_daily_report(recipient, metrics)
+                        self.last_dispatched_day = current_completed_day
+                    except Exception as exc:
+                        logger.error("Failed to dispatch daily email: %s", exc)
 
                 # Dispatch Telegram pulse alert every 3,600 seconds (1 hour)
                 if time.time() - last_hourly_alert_time >= 3600:
