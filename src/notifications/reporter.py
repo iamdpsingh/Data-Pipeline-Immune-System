@@ -350,24 +350,36 @@ class EmailDispatcher:
             logger.info("[EmailDispatcher DRY-RUN] Subject: %s", subject)
             return True
 
-        try:
-            msg = MIMEMultipart("alternative")
-            msg["Subject"] = subject
-            msg["From"] = self.sender
-            msg["To"] = recipient
+        msg = MIMEMultipart("alternative")
+        msg["Subject"] = subject
+        msg["From"] = self.sender
+        msg["To"] = recipient
 
-            part1 = MIMEText(text_body, "plain")
-            part2 = MIMEText(html_body, "html")
-            msg.attach(part1)
-            msg.attach(part2)
+        part1 = MIMEText(text_body, "plain")
+        part2 = MIMEText(html_body, "html")
+        msg.attach(part1)
+        msg.attach(part2)
 
-            with smtplib.SMTP(self.smtp_host, self.smtp_port, timeout=15) as server:
-                server.starttls()
-                server.login(self.smtp_user, self.smtp_password)
-                server.sendmail(self.sender, [recipient], msg.as_string())
+        import time
 
-            logger.info("Successfully dispatched daily email report to %s", recipient)
-            return True
-        except Exception as exc:
-            logger.error("Failed to send daily email report: %s", exc)
-            return False
+        for attempt in range(1, 4):
+            try:
+                with smtplib.SMTP(self.smtp_host, self.smtp_port, timeout=20) as server:
+                    server.starttls()
+                    server.login(self.smtp_user, self.smtp_password)
+                    server.sendmail(self.sender, [recipient], msg.as_string())
+
+                logger.info(
+                    "Successfully dispatched email report to %s (attempt %d)",
+                    recipient,
+                    attempt,
+                )
+                return True
+            except Exception as exc:
+                logger.warning("SMTP dispatch attempt %d failed: %s", attempt, exc)
+                if attempt < 3:
+                    time.sleep(2.0)
+                else:
+                    logger.error("All 3 SMTP dispatch attempts failed: %s", exc)
+                    return False
+        return False

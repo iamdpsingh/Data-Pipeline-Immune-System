@@ -93,8 +93,8 @@ class AuditLogger:
                 "status": event.status,
                 "timestamp": event.timestamp.isoformat(),
             }
-            # Inserts row via BigQuery client if configured
-            errors = self.bq_client.insert_rows_json(table_ref, [row])
+            # Inserts row via BigQuery client if configured (with 5.0s timeout to avoid socket hangs)
+            errors = self.bq_client.insert_rows_json(table_ref, [row], timeout=5.0)
             if errors:
                 logger.error("Failed to insert audit event into BigQuery: %s", errors)
         except Exception as exc:

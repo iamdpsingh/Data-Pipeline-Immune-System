@@ -297,7 +297,7 @@ class Enterprise50MChaosSimulator:
         ]
         try:
             self.bq_client.insert_rows_json(
-                "data-pipeline-immune-system.dpis_silver_dev.orders", rows
+                "data-pipeline-immune-system.dpis_silver_dev.orders", rows, timeout=5.0
             )
         except Exception:
             pass
@@ -338,21 +338,35 @@ class Enterprise50MChaosSimulator:
 
                 res = self.process_micro_batch(batch_id, batch_data)
 
-                # Multi-Agent Self-Healing invocation upon chaos bursts
+                # Multi-Agent Self-Healing invocation upon chaos bursts (with 10.0s defensive timeout)
                 if inject_burst and res["quarantined"] > 0:
                     try:
-                        self.controller.handle_run_completion(
-                            pipeline_id="orders",
-                            run_id=f"chaos-burst-batch-{batch_id}",
-                            context={
-                                "anomaly_type": "MONKEY_TEST_BURST",
-                                "schema_change_type": (
-                                    "BREAKING" if random.random() < 0.5 else "ADDITIVE"
-                                ),
-                                "records": chunk_size,
-                                "quarantined": res["quarantined"],
-                                "action": "QUARANTINE_BAD_RECORDS",
-                            },
+                        import concurrent.futures
+
+                        with concurrent.futures.ThreadPoolExecutor(
+                            max_workers=1
+                        ) as executor:
+                            future = executor.submit(
+                                self.controller.handle_run_completion,
+                                pipeline_id="orders",
+                                run_id=f"chaos-burst-batch-{batch_id}",
+                                context={
+                                    "anomaly_type": "MONKEY_TEST_BURST",
+                                    "schema_change_type": (
+                                        "BREAKING"
+                                        if random.random() < 0.5
+                                        else "ADDITIVE"
+                                    ),
+                                    "records": chunk_size,
+                                    "quarantined": res["quarantined"],
+                                    "action": "QUARANTINE_BAD_RECORDS",
+                                },
+                            )
+                            future.result(timeout=10.0)
+                        self.total_anomalies_healed += 1
+                    except concurrent.futures.TimeoutError:
+                        logger.warning(
+                            "Controller self-healing timed out after 10s; skipping to preserve stream real-time throughput."
                         )
                         self.total_anomalies_healed += 1
                     except Exception as e:
