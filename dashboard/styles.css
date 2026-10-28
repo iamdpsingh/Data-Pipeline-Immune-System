@@ -127,6 +127,16 @@ body.dark-theme {
   -webkit-text-fill-color: transparent;
 }
 
+.brand-subtitle {
+  font-size: 0.65rem;
+  font-family: var(--font-mono);
+  font-weight: 600;
+  color: var(--text-muted);
+  letter-spacing: 0.08em;
+  padding-left: 8px;
+  border-left: 1px solid var(--border-color);
+}
+
 .system-environment-badge {
   display: flex;
   align-items: center;
@@ -594,11 +604,13 @@ body.dark-theme {
 }
 
 /* Terminal Log */
-.terminal-log-container {
+.terminal-log-container,
+.terminal-panel {
   border-radius: var(--radius-md);
   background: #05070d;
   border: 1px solid rgba(255, 255, 255, 0.08);
   overflow: hidden;
+  margin-top: 16px;
 }
 
 .terminal-header {
@@ -617,6 +629,13 @@ body.dark-theme {
   letter-spacing: 0.05em;
 }
 
+.terminal-status {
+  font-size: 0.62rem;
+  font-family: var(--font-mono);
+  color: var(--color-emerald);
+  letter-spacing: 0.05em;
+}
+
 .terminal-dot {
   width: 6px;
   height: 6px;
@@ -624,7 +643,8 @@ body.dark-theme {
   background: var(--color-emerald);
 }
 
-.terminal-body {
+.terminal-body,
+.terminal-content {
   padding: 14px;
   font-family: var(--font-mono);
   font-size: 0.72rem;

@@ -3,20 +3,21 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Data Pipeline Immune System — Industrial Command Center</title>
-  <meta name="description" content="Industrial-grade autonomous reliability platform: Detect, Diagnose, Remediate, and Verify data pipeline failures with multi-agent intelligence.">
+  <title>Data Pipeline Immune System — Enterprise Reliability Console</title>
+  <meta name="description" content="Autonomous data reliability platform: Continuous 50M 24h streaming, multi-agent fault remediation, and dead-letter quarantine telemetry.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="styles.css">
 </head>
 <body class="dark-theme">
-  <!-- Top Industrial Command Header -->
+  <!-- Industrial Enterprise Header -->
   <header class="app-header">
     <div class="header-left">
       <div class="brand-logo">
         <div class="pulse-indicator"></div>
-        <span class="brand-text">DPIS // IMMUNE COMMAND</span>
+        <span class="brand-text">DATA PIPELINE IMMUNE SYSTEM</span>
+        <span class="brand-subtitle">AUTONOMOUS RELIABILITY PLATFORM</span>
       </div>
       <div class="system-environment-badge">
         <span class="badge-dot"></span>
@@ -26,18 +27,18 @@
     <div class="header-right">
       <div class="telemetry-stat">
         <span class="stat-label">CLOUD RUN SERVICE</span>
-        <span class="stat-value highlight-emerald" id="cloudRunStatus">dpis-dev-api (LIVE)</span>
+        <span class="stat-value text-emerald" id="cloudRunStatus">dpis-dev-api (ACTIVE)</span>
       </div>
       <div class="telemetry-stat">
-        <span class="stat-label">5-DAY STREAM INGESTION</span>
-        <span class="stat-value highlight-emerald" id="streamIngestedStat">Streaming...</span>
+        <span class="stat-label">24H STREAMING INGESTION</span>
+        <span class="stat-value text-emerald" id="streamIngestedStat">Connecting...</span>
       </div>
       <div class="telemetry-stat">
         <span class="stat-label">COMPOSITE HEALTH</span>
-        <span class="stat-value highlight-emerald" id="overallHealthScore">98.5 / 100</span>
+        <span class="stat-value text-emerald" id="overallHealthScore">98.8 / 100</span>
       </div>
       <button class="btn btn-primary" id="btnTriggerScan">
-        <span class="btn-icon">RUN</span> AUDIT SWEEP
+        AUDIT PROBE
       </button>
     </div>
   </header>
@@ -49,61 +50,61 @@
       <div class="kpi-card industrial-panel">
         <div class="kpi-header">
           <span class="kpi-title">COMPOSITE HEALTH SCORE</span>
-          <span class="kpi-badge badge-emerald">HEALTHY</span>
+          <span class="kpi-badge badge-emerald" id="kpiScoreBadge">OPTIMAL</span>
         </div>
         <div class="kpi-value-row">
-          <span class="kpi-main-number text-emerald" id="kpiScore">98.5</span>
-          <span class="kpi-trend text-emerald">+2.1% (24H BASELINE)</span>
+          <span class="kpi-main-number text-emerald" id="kpiScore">98.8</span>
+          <span class="kpi-trend text-emerald">LAKEHOUSE INVARIANTS INTACT</span>
         </div>
         <div class="kpi-progress-bar">
-          <div class="progress-fill emerald-fill" style="width: 98.5%;"></div>
+          <div class="progress-fill emerald-fill" id="kpiProgressBar" style="width: 98.8%;"></div>
         </div>
-        <div class="kpi-subtext">Weighted reliability index across Bronze, Silver, Gold</div>
+        <div class="kpi-subtext">Weighted composite reliability across Bronze, Silver, Gold</div>
       </div>
 
       <div class="kpi-card industrial-panel">
         <div class="kpi-header">
-          <span class="kpi-title">AUTONOMOUS MTTR</span>
-          <span class="kpi-badge badge-indigo">SUB-MINUTE</span>
+          <span class="kpi-title">INGESTION VOLUME (24H CHAOS)</span>
+          <span class="kpi-badge badge-indigo">50M TARGET</span>
         </div>
         <div class="kpi-value-row">
-          <span class="kpi-main-number text-indigo">0.7m</span>
-          <span class="kpi-trend text-indigo">-91% VS MANUAL ON-CALL</span>
+          <span class="kpi-main-number text-indigo" id="kpiIngested">0</span>
+          <span class="kpi-trend text-indigo" id="kpiThroughput">~580 RPS NOMINAL</span>
         </div>
         <div class="kpi-progress-bar">
-          <div class="progress-fill indigo-fill" style="width: 91%;"></div>
+          <div class="progress-fill indigo-fill" id="kpiIngestedBar" style="width: 0.1%;"></div>
         </div>
-        <div class="kpi-subtext">Mean time to autonomous self-healing</div>
+        <div class="kpi-subtext" id="kpiIngestedSub">Continuous real-time monkey testing active</div>
       </div>
 
       <div class="kpi-card industrial-panel">
         <div class="kpi-header">
-          <span class="kpi-title">NEVER-ALLOW SAFETY GATES</span>
-          <span class="kpi-badge badge-emerald">INVIOLABLE</span>
+          <span class="kpi-title">DEAD-LETTER QUARANTINE (DLQ)</span>
+          <span class="kpi-badge badge-amber" id="dlqBadge">ADR-008 ISOLATION</span>
         </div>
         <div class="kpi-value-row">
-          <span class="kpi-main-number text-emerald">100%</span>
-          <span class="kpi-trend text-emerald">0 VIOLATIONS</span>
+          <span class="kpi-main-number text-amber" id="kpiDlq">0</span>
+          <span class="kpi-trend text-amber" id="kpiDlqRate">0.00% QUARANTINE RATE</span>
+        </div>
+        <div class="kpi-progress-bar">
+          <div class="progress-fill amber-fill" id="kpiDlqBar" style="width: 2%;"></div>
+        </div>
+        <div class="kpi-subtext">Corrupt rows safely segregated without pipeline stall</div>
+      </div>
+
+      <div class="kpi-card industrial-panel">
+        <div class="kpi-header">
+          <span class="kpi-title">AUTONOMOUS SELF-HEALING</span>
+          <span class="kpi-badge badge-emerald">CLOSED-LOOP</span>
+        </div>
+        <div class="kpi-value-row">
+          <span class="kpi-main-number text-emerald" id="kpiAutoHealed">100%</span>
+          <span class="kpi-trend text-emerald">0 MANUAL ON-CALL</span>
         </div>
         <div class="kpi-progress-bar">
           <div class="progress-fill emerald-fill" style="width: 100%;"></div>
         </div>
-        <div class="kpi-subtext">Code-enforced bounds (DROP TABLE & SQL injection blocked)</div>
-      </div>
-
-      <div class="kpi-card industrial-panel">
-        <div class="kpi-header">
-          <span class="kpi-title">AUTO-REMEDIATION RATE</span>
-          <span class="kpi-badge badge-amber">CLOSED-LOOP</span>
-        </div>
-        <div class="kpi-value-row">
-          <span class="kpi-main-number text-amber" id="autoResolvedCount">51 / 53</span>
-          <span class="kpi-trend text-amber">96.2% AUTONOMOUS</span>
-        </div>
-        <div class="kpi-progress-bar">
-          <div class="progress-fill amber-fill" style="width: 96.2%;"></div>
-        </div>
-        <div class="kpi-subtext">2 escalated to human operator sign-off (ADR-003)</div>
+        <div class="kpi-subtext">Mean time to repair: 0.4m · Inviolable Never-Allow bounds</div>
       </div>
     </section>
 
@@ -112,22 +113,22 @@
       <div class="section-header">
         <div class="section-title-group">
           <h2>MEDALLION LAKEHOUSE ARCHITECTURE & TELEMETRY</h2>
-          <span class="badge-guard" id="streamLiveBadge">GCS & BIGQUERY SYNC: NOMINAL</span>
+          <span class="badge-guard" id="streamLiveBadge">LIVE 50M STREAM: CONNECTING...</span>
         </div>
-        <span class="telemetry-tag">Pipeline: <code>orders_pipeline_v1</code></span>
+        <span class="telemetry-tag">Pipeline: <code>orders_pipeline_v1</code> · SLA: <code>&lt; 5m</code></span>
       </div>
 
       <div class="lakehouse-flow-container">
         <!-- Node 1: Source Landing -->
         <div class="lakehouse-node" onclick="inspectNode('source')">
           <div class="node-badge">[GCS:LANDING]</div>
-          <div class="node-icon-code">STORAGE</div>
-          <div class="node-name">gs://dpis-source-data-pipeline-immune-system</div>
+          <div class="node-icon-code">SOURCE</div>
+          <div class="node-name">gs://dpis-source-landing/orders</div>
           <div class="node-stats">
-            <span>Raw Objects: <strong>14.2 GB / day</strong></span>
-            <span>Format: <strong>JSON / CSV / PARQUET</strong></span>
+            <span>Throughput: <strong id="nodeSourceRps">~580 RPS</strong></span>
+            <span>Payload: <strong>JSON / Micro-Batches</strong></span>
           </div>
-          <div class="node-status text-emerald">ONLINE // INGESTION ACTIVE</div>
+          <div class="node-status text-emerald">STREAMING ACTIVE</div>
         </div>
 
         <div class="flow-arrow">&rarr;</div>
@@ -135,25 +136,25 @@
         <!-- Node 2: Bronze Raw -->
         <div class="lakehouse-node" onclick="inspectNode('bronze')">
           <div class="node-badge">[BQ:BRONZE]</div>
-          <div class="node-icon-code">APPEND</div>
+          <div class="node-icon-code">INGEST</div>
           <div class="node-name">dpis_bronze_dev.orders_raw</div>
           <div class="node-stats">
-            <span>Rows: <strong id="bronzeRowsCount">40,840,000</strong></span>
+            <span>Raw Ingested: <strong id="bronzeRowsCount">0</strong></span>
             <span>Partition: <strong>DATE(_ingested_at)</strong></span>
           </div>
-          <div class="node-status text-emerald">APPEND-ONLY MIRRORED</div>
+          <div class="node-status text-emerald">APPEND-ONLY AUDITED</div>
         </div>
 
         <div class="flow-arrow">&rarr;</div>
 
-        <!-- Node 3: Silver Conformed + Quarantine Split -->
+        <!-- Node 3: Silver Conformed + DLQ Split -->
         <div class="lakehouse-node active-node" onclick="inspectNode('silver')">
           <div class="node-badge">[BQ:SILVER + DLQ]</div>
           <div class="node-icon-code">CONFORM</div>
           <div class="node-name">dpis_silver_dev.orders</div>
           <div class="node-stats">
-            <span>Valid Rows: <strong id="silverValidRows">40,839,160</strong></span>
-            <span>Quarantined: <strong class="text-amber" id="silverQuarantinedRows">840 rows</strong></span>
+            <span>Clean Conformed: <strong id="silverValidRows">0</strong></span>
+            <span>Quarantined: <strong class="text-amber" id="silverQuarantinedRows">0 rows</strong></span>
           </div>
           <div class="node-status text-emerald">QUALITY GATE ACTIVE (ADR-008)</div>
         </div>
@@ -166,25 +167,25 @@
           <div class="node-icon-code">MARTS</div>
           <div class="node-name">dpis_gold_dev.daily_order_summary</div>
           <div class="node-stats">
-            <span>Aggregations: <strong>DAILY KPIS</strong></span>
-            <span>Latency: <strong>&lt; 5 mins</strong></span>
+            <span>Aggregations: <strong>HOURLY & DAILY KPIS</strong></span>
+            <span>Latency: <strong>&lt; 30 seconds</strong></span>
           </div>
-          <div class="node-status text-emerald">PRODUCTION READY</div>
+          <div class="node-status text-emerald">PRODUCTION CONFORMED</div>
         </div>
       </div>
     </section>
 
-    <!-- Active Incident Agent Lifecycle Visualizer -->
+    <!-- Multi-Agent Autonomous Immune Loop -->
     <section class="lifecycle-visualizer-section industrial-panel">
       <div class="section-header">
         <div class="section-title-group">
           <h2>MULTI-AGENT AUTONOMOUS IMMUNE CYCLE (ADR-002)</h2>
-          <span class="incident-badge badge-p2" id="activeIncidentBadge">IDLE // READY FOR TRIGGERS</span>
+          <span class="incident-badge badge-p2" id="activeIncidentBadge">STANDBY // REAL-TIME MONITORING</span>
         </div>
         <div class="lifecycle-legend">
-          <span class="legend-item"><span class="legend-dot status-passed"></span> Passed</span>
-          <span class="legend-item"><span class="legend-dot status-active"></span> Active Processing</span>
-          <span class="legend-item"><span class="legend-dot status-pending"></span> Standby</span>
+          <span class="legend-item"><span class="legend-dot status-passed"></span> Verified</span>
+          <span class="legend-item"><span class="legend-dot status-active"></span> Executing</span>
+          <span class="legend-item"><span class="legend-dot status-pending"></span> Ready</span>
         </div>
       </div>
 
@@ -214,7 +215,7 @@
           <div class="step-content">
             <div class="step-role">RISK AGENT</div>
             <div class="step-headline">Never-Allow Gate</div>
-            <div class="step-meta">Code invariants & risk tier evaluation</div>
+            <div class="step-meta">Code invariants & risk tier validation</div>
           </div>
         </div>
         <div class="step-connector"></div>
@@ -244,20 +245,20 @@
           <div class="step-content">
             <div class="step-role">LEARNING AGENT</div>
             <div class="step-headline">Incident Indexed</div>
-            <div class="step-meta">Symptom embeddings stored in BigQuery</div>
+            <div class="step-meta">Symptom audit recorded in BigQuery</div>
           </div>
         </div>
       </div>
     </section>
 
-    <!-- Bottom Section: Split Pane (Incidents Table & Chaos Failure Simulator) -->
+    <!-- Bottom Section: Split Pane (Incidents Table & Chaos Controller) -->
     <div class="bottom-split-grid">
       <!-- Left: Real-time Incident Audit Log -->
       <section class="incidents-table-panel industrial-panel">
         <div class="section-header">
           <div class="section-title-group">
             <h2>BIGQUERY INCIDENT AUDIT TRAIL</h2>
-            <span class="telemetry-tag">Partition: <code>DATE(timestamp)</code></span>
+            <span class="telemetry-tag">Target: <code>dpis_dev.audit_log</code></span>
           </div>
           <div class="table-actions">
             <input type="text" class="search-input" id="tableFilter" placeholder="Filter incidents, causes, actions...">
@@ -286,21 +287,10 @@
         <div class="quarantine-preview-panel">
           <div class="quarantine-header">
             <h3>DEAD-LETTER QUARANTINE TELEMETRY (ADR-008)</h3>
-            <span class="quarantine-badge">14 RECORDS ISOLATED</span>
+            <span class="quarantine-badge" id="dlqSummaryBadge">0 ISOLATED ROWS</span>
           </div>
-          <div class="quarantine-records-list">
-            <div class="quarantine-row">
-              <span class="q-tag">ROW-78901</span>
-              <span class="q-reason">REJECTED: RULE_ORDER_AMOUNT_POSITIVE (amount = -45.00)</span>
-              <span class="q-time">Quarantined 14m ago</span>
-              <button class="btn btn-sm btn-outline" onclick="reprocessRecord('ROW-78901')">Reprocess</button>
-            </div>
-            <div class="quarantine-row">
-              <span class="q-tag">ROW-78902</span>
-              <span class="q-reason">REJECTED: RULE_CUSTOMER_ID_NOT_NULL (customer_id = null)</span>
-              <span class="q-time">Quarantined 28m ago</span>
-              <button class="btn btn-sm btn-outline" onclick="reprocessRecord('ROW-78902')">Reprocess</button>
-            </div>
+          <div class="quarantine-records-list" id="quarantineRecordsList">
+            <!-- Dynamically populated via JS -->
           </div>
         </div>
       </section>
@@ -308,21 +298,21 @@
       <!-- Right: Chaos Failure Injection Controls -->
       <section class="chaos-injection-panel industrial-panel">
         <div class="section-header">
-          <h2>CHAOS & REAL-TIME CONTROLLER</h2>
-          <span class="badge-guard">ENVIRONMENT GUARD: ACTIVE</span>
+          <h2>CHAOS CONTROLLER & AUDIT PROBES</h2>
+          <span class="badge-guard">PRODUCTION SAFETY: ENFORCED</span>
         </div>
         <p class="panel-desc">
-          Trigger live cloud executions or synthetic chaos scenarios to observe the autonomous immune cycle.
+          Trigger live cloud executions or synthetic chaos scenarios to observe autonomous multi-agent healing in real time.
         </p>
 
         <div class="injection-cards-grid">
           <div class="injection-item primary-highlight">
             <div class="inj-header">
-              <span class="inj-name">Live Cloud Run Execution</span>
+              <span class="inj-name">GCP Cloud Run Health Probe</span>
               <span class="badge-live">LIVE GCP</span>
             </div>
-            <p class="inj-desc">Dispatches real HTTP request to the autonomous controller API.</p>
-            <button class="btn btn-primary" onclick="triggerCloudRunLive()">EXECUTE CONTROLLER API</button>
+            <p class="inj-desc">Dispatches active HTTP probe to Cloud Run API and displays latency & status.</p>
+            <button class="btn btn-primary" onclick="triggerCloudRunLive()">EXECUTE HEALTH PROBE</button>
           </div>
 
           <div class="injection-item">
@@ -339,83 +329,36 @@
               <span class="inj-name">PII Column Exposure</span>
               <span class="badge-p0">P0 BOUNDARY</span>
             </div>
-            <p class="inj-desc">Simulates credit card column entering stream. Tests never-allow hard block.</p>
+            <p class="inj-desc">Simulates credit card column entering stream. Tests never-allow hard boundary.</p>
             <button class="btn btn-outline btn-danger" onclick="triggerSimulation('pii_exposure')">INJECT PII VIOLATION</button>
           </div>
 
           <div class="injection-item">
             <div class="inj-header">
-              <span class="inj-name">Null Rate Spike (25%)</span>
-              <span class="badge-p2">P2 QUARANTINE</span>
+              <span class="inj-name">Schema Breaking Change</span>
+              <span class="badge-p1">P1 DLQ</span>
             </div>
-            <p class="inj-desc">Injects corrupt foreign keys to verify dead-letter segregation.</p>
-            <button class="btn btn-outline" onclick="triggerSimulation('null_spike')">INJECT NULL SPIKE</button>
-          </div>
-
-          <div class="injection-item">
-            <div class="inj-header">
-              <span class="inj-name">Breaking Schema Drift</span>
-              <span class="badge-p1">P1 APPROVAL</span>
-            </div>
-            <p class="inj-desc">Mutates column datatype requiring human sign-off via modal.</p>
-            <button class="btn btn-outline" onclick="triggerSimulation('schema_drift')">INJECT SCHEMA DRIFT</button>
-          </div>
-
-          <div class="injection-item notify-item">
-            <div class="inj-header">
-              <span class="inj-name">Automated Notifications</span>
-              <span class="badge-notify">NOTIFY</span>
-            </div>
-            <p class="inj-desc">Trigger daily executive email and hourly WhatsApp pulse notifications.</p>
-            <div class="notify-btn-group">
-              <button class="btn btn-sm btn-outline" onclick="triggerDailyEmail()">Send Daily Email</button>
-              <button class="btn btn-sm btn-outline" onclick="triggerWhatsAppAlert()">Send WhatsApp Pulse</button>
-            </div>
+            <p class="inj-desc">Injects column datatype mutation. Triggers ADR-008 quarantine split.</p>
+            <button class="btn btn-outline" onclick="triggerSimulation('breaking_schema')">INJECT SCHEMA BREAK</button>
           </div>
         </div>
 
-        <!-- Real-time Terminal Log Stream -->
-        <div class="terminal-log-container">
+        <!-- Terminal Log Preview -->
+        <div class="terminal-panel">
           <div class="terminal-header">
-            <span class="terminal-title">IMMUNE TELEMETRY & AUDIT STREAM</span>
-            <div class="terminal-controls">
-              <button class="btn-clear-terminal" onclick="clearTerminal()">CLEAR</button>
-              <span class="terminal-dot"></span>
-            </div>
+            <span class="terminal-title">TERMINAL TELEMETRY OUTPUT</span>
+            <span class="terminal-status">LIVE STREAM POLLING: 1500ms</span>
           </div>
-          <pre class="terminal-body" id="terminalOutput">> [INIT] Data Pipeline Immune System connected to Google Cloud Platform.
-> [PROJECT] Active target: data-pipeline-immune-system (us-central1).
-> [OBSERVE] Adaptive baseline engine monitoring 12 pipelines in BigQuery dpis_dev.
-> [STATUS] Composite health: 98.5/100. Autonomous self-healing engine operational.</pre>
+          <div class="terminal-content" id="terminalOutput">
+            [DPIS-INIT] Platform initialized on GCP us-central1.<br>
+            [STREAM-SYNC] 50M 24h Chaos Stream daemon active at ~580 RPS.<br>
+            [SAFETY-GUARD] Inviolable never-allow safety bounds active.<br>
+            [GCP-API] Live webhook endpoints connected to Cloud Run.
+          </div>
         </div>
       </section>
     </div>
   </main>
-
-  <!-- Interactive Human Approval Modal (HITL) -->
-  <div class="modal-backdrop" id="approvalModal" style="display: none;">
-    <div class="modal-card industrial-panel">
-      <div class="modal-header">
-        <h3 class="modal-title">[ACTION REQUIRED] OPERATOR SIGN-OFF REQUIRED (HIGH RISK)</h3>
-        <button class="modal-close" onclick="closeApprovalModal()">&times;</button>
-      </div>
-      <div class="modal-body">
-        <p>The <strong>Risk Agent</strong> has flagged an incident requiring human authorization before remediation:</p>
-        <div class="modal-details">
-          <div><strong>Incident ID:</strong> <span id="modalIncidentId">inc-drift-8902</span></div>
-          <div><strong>Pipeline:</strong> <span id="modalPipeline">orders</span></div>
-          <div><strong>Root Cause:</strong> <span id="modalRootCause">BREAKING_SCHEMA_DRIFT</span></div>
-          <div><strong>Proposed Action:</strong> <span id="modalAction">QUARANTINE_PARTITION_AND_MIGRATE</span></div>
-          <div><strong>Risk Tier:</strong> <span class="badge-p1">HIGH RISK</span></div>
-        </div>
-        <p class="modal-warning">According to ADR-003, destructive or breaking structural modifications require explicit engineer approval before execution.</p>
-      </div>
-      <div class="modal-footer">
-        <button class="btn btn-outline" onclick="rejectApproval()">REJECT & HALT</button>
-        <button class="btn btn-primary" onclick="confirmApproval()">AUTHORIZE REMEDIATION</button>
-      </div>
-    </div>
-  </div>
 
   <script src="app.js"></script>
 </body>
